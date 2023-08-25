@@ -1,0 +1,13 @@
+Package: WisNorms
+Type: Package
+Title: Tools For Harmonizing and Interpreting Wisconsin WRAP/ADRC Neuropsychological Data
+Version: 0.1.0
+Author: Erin Jonaitis and Rebecca Langhough
+Maintainer: Erin Jonaitis <jonaitis@wisc.edu>
+Description: This package includes a small suite of functions for working with neuropsychological data from WRAP and ADRC cohorts. Harmonization uses the equipercentile method and is based on Monsell et al (2016) and Jonaitis et al (in prep). 
+    A key element of this package is the Shiny app, WisNormPlot, which can be used to generate plots of cognitive scores from a single individual, placed in the context of cross-sectional and longitudinal norms. For details on this method, see Koscik and Jonaitis et al (2019).
+License: MIT
+Encoding: UTF-8
+LazyData: true
+Imports: dplyr, tidyr, magrittr, ggplot2, shiny, patchwork, ggpattern, ggnewscale, ggrepel, readr, stringr
+RoxygenNote: 7.1.1
