@@ -1,8 +1,6 @@
 # Setting necessary environment variables for internal use.
 # Should need to rerun only when new outcomes are added.
 
-library(pryr)
-
 e <- new.env()
 assign("target", read.csv("Z:/sandbox/target.csv", stringsAsFactors=FALSE), envir=e)
 assign("missval", read.csv("Z:/sandbox/missval.csv", stringsAsFactors=FALSE), envir=e)
@@ -18,16 +16,8 @@ assign("sample_csf", read.csv("P:/data/sample_csf.csv", stringsAsFactors=FALSE),
 f <- list.files(path="P:/model-2023/")
 for (i in 1:length(f)) {
   name <- gsub(".rda","",f[i])
-  message(paste("Starting",name))
   filename <- paste0("P:/model-2023/", f[i])
   assign(name, readRDS(filename), envir=e)
-  message(paste("Read",name))
-  message(paste("ls:",paste(ls(), collapse=", ")))
-  message(paste("ls(e):", paste(ls(e), collapse=", ")))
-  size.now <- object_size(e)
-  message(paste("e contains",size.now,"MB"))
-  message(paste("mem_used is", mem_used()))
-  gc()
 }
 
 save(list=ls(envir=e), envir=e, file="R/sysdata.rda")
