@@ -19,13 +19,6 @@ library(readr)
 library(stringr)
 library(patchwork)
 
-# for package-dev troubleshooting only
-# unccoefs <- readRDS("Z:/R-devel/UPNorms/inst/shiny-examples/WisNormPlot/data/unccoefs.rds")
-# sample_df <- readRDS("Z:/R-devel/UPNorms/inst/shiny-examples/WisNormPlot//data/sample_df.rds")
-# sample_mh <- readRDS("Z:/R-devel/UPNorms/inst/shiny-examples/WisNormPlot//data/sample_mh.rds")
-# sample_pib <- readRDS("Z:/R-devel/UPNorms/inst/shiny-examples/WisNormPlot//data/sample_pib.rds")
-# sample_csf <- readRDS("Z:/R-devel/UPNorms/inst/shiny-examples/WisNormPlot//data/sample_csf.rds")
-
 unccoefs <- readRDS("./data/unccoefs.rds")
 sample_df <- readRDS("./data/sample_df.rds")
 sample_mh <- readRDS("./data/sample_mh.rds")
@@ -714,7 +707,6 @@ server <- function(input, output, session) {
                    label_size = 6 - pmin(ncol, 4),
                    label_xnudge = -1*pmin(ncol, 2),
                    age_xnudge = age + label_xnudge)
-          write.csv(df.mh.sum, "Z:/sandbox/df.mh.sum.csv")
           letterlabels <- as.numeric(sapply(unique(df.mh.sum$groups), utf8ToInt))
           outplot <- outplot + geom_vline(data=df.mh,
                                           aes(xintercept=age),
