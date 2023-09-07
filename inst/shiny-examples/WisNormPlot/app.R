@@ -642,7 +642,7 @@ server <- function(input, output, session) {
           scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=1.15,
                                  breaks=c(1.10, 1.15, 1.19),
                                  labels=c(expression("A"*beta*"-"), "",
-                                          expression("A"*beta*"-"))) +
+                                          expression("A"*beta*"+"))) +
           scale_linetype_manual(values=my.linescale) +
           guides(colour_gradient2=guide_legend(order=1),
                  linetype=guide_legend(order=2, override.aes=list(size=0.7, colour="orangered"))) +
