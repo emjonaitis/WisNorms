@@ -586,7 +586,7 @@ server <- function(input, output, session) {
                                          0, eaoa_1p19_range)) %>%
             select(my.pibmin, my.pibmax, my.pibrange, my.pibmean) %>%
             merge(limits, ., all.x=TRUE)
-          if (is.na(limits$my.pibmin)) {
+          if (all(is.na(limits$my.pibmin))) {
             my.spacing <- ifelse(v>3, 0.03, 0.02)
             my.linescale <- c(my.linescale, "PiB"=1)
             outplot <- outplot +
