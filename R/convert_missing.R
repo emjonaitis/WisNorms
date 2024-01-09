@@ -18,6 +18,8 @@ convert_missing <- function(x, raw.name, source) {
     stop("source must be either 'ADRC' or 'WRAP'.")
   }
   replace <- unlist(strsplit(missval$missval[missval$variable==raw.name & missval$Data.Source==source], split=", "))
+  message(paste("I definitely updated this and for raw.name",raw.name,"I see the replace string",
+          paste0("[", paste(replace, collapse=","), "]")))
   newval <- ifelse(grepl(pattern="missing", x=x, fixed=FALSE)==TRUE, NA,
                    ifelse(length(replace)==0, x,
                           ifelse(max(mapply(FUN=grepl, pattern=replace, x=x, fixed=TRUE))==TRUE, NA, x)))
