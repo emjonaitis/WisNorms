@@ -303,8 +303,7 @@ server <- function(input, output, session) {
                          maxage = 85) %>%
                ungroup() %>%
                data.frame()
-    for (v in 1:nrow(limits)) { message(paste("Line 306:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
-    
+
     this.df <- mutate(this.df,
                       sign = factor(sign(this.df$best.q.c - 0.5),
                                     levels=c(-1,1), labels=c("Low","High")),
@@ -354,10 +353,8 @@ server <- function(input, output, session) {
         summarize(nobs=n(),
                   singleobs = (nobs==1)) %>%
         ungroup()
-      for (v in 1:nrow(nobs)) { message(paste0(nobs$variable[v], "=", nobs$nobs[v], "\n"))}
       this.df <- merge(this.df, nobs)
       limits  <- merge(limits, nobs)
-      for (v in 1:nrow(limits)) { message(paste("Line 360:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
       alphalim <- group_by(this.df, variable) %>%
         summarize(alphamin = ifelse(length(na.omit(alpha))==0,
                                     NA, min(alpha, na.rm=TRUE)),
@@ -372,12 +369,8 @@ server <- function(input, output, session) {
         rename(variable=name) %>%
         slice(1) %>%
         ungroup()
-      message(paste("nlines.df:", nrow(nlines.df)))
       limits <- merge(nlines.df, limits)
-      for (v in 1:nrow(limits)) { message(paste("Line 377:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
-      
-      message(paste("limits:", nrow(limits)))
-      message("I think we might have trouble with the following step, making the demos df")
+
       demos   <- arrange(this.df, visno) %>%
         summarize(source=first(source),
                   last_dx=last(Summary.Diagnosis),
@@ -385,7 +378,6 @@ server <- function(input, output, session) {
                   ed.ba.f=first(ed.ba.f),
                   base.readcat.f=first(base.readcat.f),
                   base.readcat.lab = recode(base.readcat.f, `0`="Q1",`1`="Q2",`2`="Q3",`3`="Q4"))
-      message("Got past making demos")
       # Note 2023-09-25: Need to modify this to create some kind of intercept default
       #   for use when we are missing demographics. We want to still be able to plot raw scores even when
       #   we cannot plot lines.
@@ -409,7 +401,6 @@ server <- function(input, output, session) {
         summarize(intercept = sum(value.add)) %>%
         na.exclude() %>%
         ungroup()
-      message("We just made intercepts.long")
 
       intercepts <- spread(intercepts.long,
                            key="tau", value="intercept", fill=0) %>%
@@ -418,7 +409,6 @@ server <- function(input, output, session) {
       rownames(intercepts) <- intercepts$name
       intercepts <- select(intercepts, -name)
       int.miss   <- (nrow(na.exclude(intercepts.long))==0)
-      message(paste("int.miss is", int.miss))
 
       slopes.raw <- expand.grid(unique(coef.long$name),
                                 unique(coef.long$tau),
@@ -433,7 +423,6 @@ server <- function(input, output, session) {
                                         unique(slopes.raw$coef),
                                         unique(slopes.raw$tau)))
       slopes[is.na(slopes)] <- 0  # Fill NA values with 0 (indicates unused coef)
-      message("About to apply myfun")
       myfun <- function(x, v, t) { intercepts[v, t] +
           slopes[v, "age.L", t]*(x) +
           slopes[v, "age.Q", t]*(x-meanage)^2 +
@@ -447,7 +436,6 @@ server <- function(input, output, session) {
                lowobs = min(this.df$value[this.df$variable==variable])) %>%
         ungroup() %>%
         data.frame
-      for (v in 1:nrow(limits)) { message(paste("Line 446:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
       ## Obtain limits of plottable values for each tau for each outcome
       ## (Reason: Some functions predict out of range values. Don't want to plot)
 
@@ -504,7 +492,6 @@ server <- function(input, output, session) {
                                   highpoint + pmax(1, 0.1*highpoint))) %>%
           ungroup() %>%
           mutate(ncol = length(unique(variable)))
-        for (v in 1:nrow(limits)) { message(paste("Line 506:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
       } else {
         message("Dynamic axis off.")
         limits <- limits %>%
@@ -524,7 +511,6 @@ server <- function(input, output, session) {
         limits      <- merge(limits, myfun.ymin, all.x=TRUE) %>%
           mutate(y.range = pmax(my.ymax, lab.ymax, na.rm=TRUE) -
                    pmin(my.ymin, lab.ymin, na.rm=TRUE))
-        for (v in 1:nrow(limits)) { message(paste("Line 527:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
         unclines.df <- group_by(myfun.labs, variable, t) %>%
           select(variable, t, ll, ul) %>%
           tidyr::expand(x=seq(ll, ul)) %>%
@@ -537,7 +523,6 @@ server <- function(input, output, session) {
       else {
         limits      <- mutate(limits,
                               y.range = my.ymax - my.ymin)
-        for (v in 1:nrow(limits)) { message(paste("Line 540:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
         
       }
       outplot  <- ggplot(this.df, aes(x=age)) +
@@ -747,8 +732,6 @@ server <- function(input, output, session) {
             theme(legend.direction="vertical")
         }
       }
-      message(paste("int.miss is",int.miss))
-      for (v in 1:nrow(limits)) { message(paste("Line 751:", paste0(colnames(limits),"=", limits[v,], collapse=";"))) }
       if (vislabel==TRUE) {
         padding <- ifelse(dyn.axis==TRUE, 20, 16)
         if (int.miss==FALSE) {
@@ -764,7 +747,6 @@ server <- function(input, output, session) {
                    annonudge = 0.05*y.range,
                    annosize = 5 - pmin(ncol, 2))
         }
-        message("About to name annonudge.vec")
         annonudge.vec <- na.omit(this.df$annonudge)
         names(annonudge.vec) <- unique(this.df$variable)
         outplot <- outplot +
