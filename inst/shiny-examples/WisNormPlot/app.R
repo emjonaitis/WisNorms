@@ -11,7 +11,7 @@ library(readr)
 library(stringr)
 library(patchwork)
 
-unccoefs <- readRDS("unccoefs.rds")
+unccoefs <- readRDS("./data/unccoefs.rds")
 sample_df <- readRDS("./data/sample_df.rds")
 sample_mh <- readRDS("./data/sample_mh.rds")
 sample_pib <- readRDS("./data/sample_pib.rds")
