@@ -859,6 +859,37 @@ server <- function(input, output, session) {
       }
       
       # Below: dummy data to set y limits
+      # Need to add ghost rows to show both High and Low arrows in legend:
+      if(all(is.na(this.df$sign)) |
+         all(this.df$sign=="High" | is.na(this.df$sign)) |
+         all(this.df$sign=="Low" | is.na(this.df$sign)) ) {
+
+        this.df_2<- this.df %>%
+                    add_row(sign="High", variable.f=this.df$variable.f[1]) %>%
+                    add_row(sign="Low", variable.f=this.df$variable.f[1])
+
+        outplot<-   outplot +
+                    new_scale("shape")+
+                    geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
+                    geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
+                    geom_line(aes(y=value, group=id),
+                              data=this.df_2, linewidth=1.5, show.legend=FALSE) +
+                    geom_point(data=this.df_2,
+                               aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
+                    scale_shape_manual(limits=c("High","Low"), values=c(2,6),
+                                       na.translate=FALSE, guide = guide_legend(order = 99)) +
+                    scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
+                    geom_point(data=filter(this.df, singleobs==TRUE),
+                               aes(y=value),
+                               shape=4, size=4, stroke=2, show.legend=FALSE) +
+                    labs(x="Age",
+                         y="Outcome value",
+                         shape="Conditional performance",
+                         pattern_fill="") +
+                    theme_bw() +
+                    theme(legend.position="bottom", legend.direction = "horizontal",
+                          legend.box="vertical")
+        } else{
         outplot  <- outplot +
                     new_scale("shape")+
                     geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
@@ -879,7 +910,7 @@ server <- function(input, output, session) {
                     theme_bw() +
                     theme(legend.position="bottom", legend.direction = "horizontal",
                           legend.box="vertical")
-      
+      }
       
       if (mh==TRUE) {
         df.mh      <- filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
