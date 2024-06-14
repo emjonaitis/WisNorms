@@ -142,7 +142,7 @@ server <- function(input, output, session) {
   dataInput <- reactive({
 
     if (input$ownData==FALSE) {
-      df <- read.csv("sample data/sample_df.csv") %>%
+      df <- sample_df %>%
         rename(ed.ba = ed.ba.f,
                gender = gender.f,
                base.readcat = base.readcat.f) %>%
@@ -210,7 +210,7 @@ server <- function(input, output, session) {
 
   pibInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_pib.csv")
+      sample_pib
     } else {
       req(input$file2)
       read.csv(input$file2$datapath, stringsAsFactors=FALSE)
@@ -219,7 +219,7 @@ server <- function(input, output, session) {
 
   csfInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_csf.csv")
+      sample_csf
     } else {
       req(input$file3)
       read.csv(input$file3$datapath, stringsAsFactors=FALSE)
@@ -228,7 +228,7 @@ server <- function(input, output, session) {
   
   ptauInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_ptau.csv")
+      sample_ptau
     } else {
       req(input$file4)
       read.csv(input$file4$datapath, stringsAsFactors=FALSE)
@@ -237,7 +237,7 @@ server <- function(input, output, session) {
   
   mkInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_mk.csv")
+      sample_mk
     } else {
       req(input$file5)
       read.csv(input$file5$datapath, stringsAsFactors=FALSE)
@@ -246,7 +246,7 @@ server <- function(input, output, session) {
   
   ampInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_amp.csv")
+      sample_amp
     } else {
       req(input$file6)
       read.csv(input$file6$datapath, stringsAsFactors=FALSE)
@@ -255,7 +255,7 @@ server <- function(input, output, session) {
 
   mhInput <- reactive({
     if (input$ownData==FALSE) {
-      read.csv("sample data/sample_mh.csv")
+      sample_mh
     } else {
       req(input$file7)
       read.csv(input$file7$datapath, stringsAsFactors=FALSE)
@@ -1116,7 +1116,7 @@ server <- function(input, output, session) {
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age=age_csf, Variable, Value)
-      
+      if(ownData==TRUE){
       df.pib.merge<-  df.pib %>%
                       arrange(age) %>%
                       group_by(age) %>% slice(1) %>% ungroup() %>%
@@ -1126,6 +1126,17 @@ server <- function(input, output, session) {
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age, Variable, Value)
+        } else{
+        df.pib.merge<- df.pib %>%
+                      arrange(age) %>%
+                      group_by(age) %>% slice(1) %>% ungroup() %>%
+                      select(id, age, pib_trunc) %>%
+                      mutate(Biomarker="PiB/NAV") %>%
+                      pivot_longer(cols=c(pib_trunc),
+                                   names_to = "Variable",
+                                   values_to="Value") %>%
+                      select(id, Biomarker, age, Variable, Value)
+        }
       
       df<-  rbind(df.amp.merge, df.mk.merge) %>%
             rbind(., df.ptau.merge) %>%
