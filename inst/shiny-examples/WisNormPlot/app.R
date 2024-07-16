@@ -107,12 +107,11 @@ ui <- fluidPage(
 
       checkboxGroupInput("options",
                          "Annotation options",
-                         choices = list("Dynamic axis" = 1,
-                                        "Annotate with visit labels" = 2,
+                         choices = list("Annotate with visit labels" = 2,
                                         "Annotate with medical history" = 3,
                                         "Annotate with biomarkers" = 4
                                         ),
-                         selected = c(1, 2)),
+                         selected = c(2)),
 
       # Main panel for displaying outputs ----
 
@@ -269,7 +268,7 @@ server <- function(input, output, session) {
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
-    dyn.axis <- as.logical(max(grepl("1", input$options)))
+    dyn.axis <- TRUE
     vislabel <- as.logical(max(grepl("2", input$options)))
     mh <- as.logical(max(grepl("3", input$options)))
     biomarkers <- as.logical(max(grepl("4", input$options)))
@@ -285,7 +284,7 @@ server <- function(input, output, session) {
                    "Boston Naming (XW)", "Animal Naming", "Letter Fluency (CFL) (XW)",
                    "TMT-A", "TMT-B", "Digit Symbol",
                    "PACC3-CFL", "PACC3-AN", "PACC3-DS", "PACC4-DS", "PACC5-DS")
-    testmax.vec <- c(75, 15, 25, 25, Inf, 60, Inf, Inf, 150, 300, Inf, Inf, Inf, Inf, Inf, Inf)
+    testmax.vec <- c(75, 15, 25, 25, 200, 60, 100, 250, 150, 400, 100, 200, 200, 200, 200, 200)
     names(testmax.vec) <- varnames
 
     var.in <- input$variable
@@ -411,18 +410,18 @@ server <- function(input, output, session) {
         df.amp <- df.amp %>%
                   mutate(id = gsub("WRAP", "", Name)) %>%
                   filter(id==inid) %>%
-                  mutate(amp_bin = case_when(Result %in% c("Detected-1", "Detected-2") ~ 2,
+                  mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                              Result %in% c("Not Detected") ~ 1,
-                                             Result %in% c("QNS", "Indeterminate") ~ NA),
+                                             Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
                          age=case_when(shareable_age_at_appointment == ">90" ~ 90,
                                        TRUE ~ as.numeric(shareable_age_at_appointment))) %>%
                   select(id, age_amp=age, Result, amp_bin)
       }else{
         df.amp <- df.amp %>% 
                   filter(id==inid) %>%
-                  mutate(amp_bin = case_when(Result %in% c("Detected-1", "Detected-2") ~ 2,
+                  mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                              Result %in% c("Not Detected") ~ 1,
-                                             Result %in% c("QNS", "Indeterminate") ~ NA)) %>%
+                                             Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA)) %>%
                   select(id, age_amp=age, Result, amp_bin)
       }
       
@@ -598,17 +597,7 @@ server <- function(input, output, session) {
                                           highpoint + pmax(1, 0.1*highpoint))) %>%
                   ungroup() %>%
                   mutate(ncol = length(unique(variable)))
-      } else {
-        message("Dynamic axis off.")
-        limits <- limits %>%
-                  mutate(highpoint = pmax(highobs, highfun, na.rm=TRUE),
-                         lowpoint = pmax(1, testmin+1),
-                         testmax = ifelse(is.infinite(testmax), highpoint, testmax),
-                         my.ymin = lowpoint - pmax(1, 0.1*highpoint),
-                         my.ymax = testmax + pmax(1, 0.1*highpoint)) %>%
-                  ungroup() %>%
-                  mutate(ncol = length(unique(variable)))
-      }
+      } 
 
       if (int.miss==FALSE) {
         limits<-  merge(limits, myfun.ymin, all.x=TRUE) %>%
@@ -631,10 +620,8 @@ server <- function(input, output, session) {
       ## Start plot creation
       outplot  <- ggplot(this.df, aes(x=age)) +
         scale_x_continuous(limits=c(35,90))
-      
-      if (vislabel==TRUE) {
-        padding <- ifelse(dyn.axis==TRUE, 20, 16)
-        if (int.miss==FALSE) {
+
+      if (int.miss==FALSE) {
           this.df <- merge(this.df,
                            select(limits, variable, y.range, my.ymin, my.ymax, lab.ymin, lab.ymax, ncol)) %>%
                      mutate(annohts = 1.05 * pmin(my.ymin, lab.ymin, na.rm=TRUE),
@@ -650,16 +637,142 @@ server <- function(input, output, session) {
         
         annonudge.vec <- na.omit(this.df$annonudge)
         names(annonudge.vec) <- unique(this.df$variable)
+      
+      if (vislabel==TRUE) {
+        padding <- ifelse(dyn.axis==TRUE, 20, 16)
+        
         outplot<- outplot +
                   geom_text_repel(data=this.df,
-                                  aes(x=age, y=annohts,
+                                  aes(x=age, y=0,
                                       label=paste0("V", visno)),
                                   hjust=0.5, colour="blue",
                                   direction="x",
                                   force=1.5,
                                   segment.colour=NA,
-                                  size=this.df$annosize[1])
+                                  size=this.df$annosize[1])+
+                  facet_wrap(~variable.f, 
+                                       ncol=pmin(limits$ncol[1],3),
+                                       scales="free_y")
+      } else{
+        outplot<- outplot +
+          facet_wrap(~variable.f, 
+                     ncol=pmin(limits$ncol[1],3),
+                     scales="free_y")
       }
+
+      ## Adding in scale limits so no y values display over test limits due to biomarker symbol
+      if(var.in=="memory"){
+          breaks_list<- list(
+            if("ttotal" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0, 75, 25), limits=c(0,NA))
+              }, 
+            if("drraw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0, 15, 5), limits=c(0,NA))
+              }, 
+            if("lm_imm.xw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0, 25, 5), limits=c(0,NA))
+              }, 
+            if("lm_del.xw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0, 25, 5), limits=c(0,NA))
+              }, 
+            if("theo.mem.xw.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Memory Composite (XW)")$my.ymax), 40), limits=c(0,NA))
+            })
+          breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
+          
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = breaks_list)
+          
+        } else if(var.in=="execfn"){
+          
+          breaks_list<- list(
+            if("trla" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="TMT-A")$my.ymax), 25), limits=c(0, NA))
+            },
+            if("trlb.xw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="TMT-B")$my.ymax), 50), limits=c(0, NA))
+            }, 
+            if("waisrtot" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0, 100, 25), limits=c(0, NA))
+            })
+          
+          breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
+          
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = breaks_list)
+          
+          
+        } else if (var.in=="language") {
+          
+          breaks_list<- list(
+            if("animtotraw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Animal Naming")$my.ymax), 20), limits=c(0, NA))
+              },
+            if("cfl.xw" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Letter Fluency (CFL) (XW)")$my.ymax), 20), limits=c(0, NA))
+              })
+          
+          breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
+        
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = breaks_list)
+          
+        } else if (var.in=="global") {
+          
+          breaks_list<- list(
+            if("pacc3.cfl.xw.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-CFL")$my.ymax), 50), limits=c(0, NA))
+              },
+            if("pacc3.an.xw.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-AN")$my.ymax), 50), limits=c(0, NA))
+              },
+            if("pacc3.wrap.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-DS")$my.ymax), 50), limits=c(0, NA))
+              },
+            if("pacc4.wrap.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC4-DS")$my.ymax), 50), limits=c(0, NA))
+              },
+            if("pacc5.wrap.sca" %in% this.df$variable){
+              scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC5-DS")$my.ymax), 50), limits=c(0, NA))
+            })
+          
+          breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
+          
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = breaks_list)
+          
+        } else if (var.in %in% c("drraw", "lm_imm.xw", "lm_del.xw")) {
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = list(
+              scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 5), limits=c(0, NA))
+            ))
+          
+        } else if (var.in %in% c("animtotraw", "cfl.xw", "ttotal")) {
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = list(
+              scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 20), limits=c(0, NA))
+            ))
+          
+        } else if (var.in %in% c("trla", "waisrtot")) {
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = list(
+              scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 25), limits=c(0, NA))
+            ))
+          
+        } else if (var.in == "theo.mem.xw.sca") {
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = list(
+              scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 40), limits=c(0, NA))
+            ))
+          
+        } else if (var.in %in% c("trlb.xw", "pacc3.cfl.xw.sca", "pacc3.an.xw.sca", "pacc3.wrap.sca", "pacc4.wrap.sca", "pacc5.wrap.sca")) {
+          outplot<- outplot+
+            ggh4x::facetted_pos_scales(y = list(
+              scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 50), limits=c(0, NA))
+            ))
+          
+        }
+        
         
       if(biomarkers==TRUE){
         
@@ -868,27 +981,50 @@ server <- function(input, output, session) {
                     add_row(sign="High", variable.f=this.df$variable.f[1]) %>%
                     add_row(sign="Low", variable.f=this.df$variable.f[1])
 
-        outplot<-   outplot +
-                    new_scale("shape")+
-                    geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
-                    geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
-                    geom_line(aes(y=value, group=id),
-                              data=this.df_2, linewidth=1.5, show.legend=FALSE) +
-                    geom_point(data=this.df_2,
-                               aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
-                    scale_shape_manual(limits=c("High","Low"), values=c(2,6),
-                                       na.translate=FALSE, guide = guide_legend(order = 99)) +
-                    scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
-                    geom_point(data=filter(this.df, singleobs==TRUE),
-                               aes(y=value),
-                               shape=4, size=4, stroke=2, show.legend=FALSE) +
-                    labs(x="Age",
-                         y="Outcome value",
-                         shape="Conditional performance",
-                         pattern_fill="") +
-                    theme_bw() +
-                    theme(legend.position="bottom", legend.direction = "horizontal",
-                          legend.box="vertical")
+        if(any(this.df$singleobs)==TRUE){
+          outplot <-  outplot +
+            new_scale("shape")+
+            geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
+            geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
+            geom_line(aes(y=value, group=id),
+                      data=this.df2, linewidth=1.5, show.legend=FALSE) +
+            geom_point(data=this.df2, 
+                       aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
+            scale_shape_manual(limits=c("High","Low"), values=c(2,6), 
+                               na.translate=FALSE, guide = guide_legend(order = 99)) +
+            scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
+            geom_point(data=filter(this.df, singleobs==TRUE),
+                       aes(y=value),
+                       shape=4, size=4, stroke=2, show.legend=F) +
+            labs(x="Age",
+                 y="Outcome value",
+                 shape="Conditional performance",
+                 pattern_fill="") +
+            theme_bw() +
+            theme(legend.position="bottom", legend.direction = "horizontal",
+                  legend.box="vertical")
+        } else {
+          outplot <-  outplot +
+            new_scale("shape")+
+            geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
+            geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
+            geom_line(aes(y=value, group=id),
+                      data=this.df2, linewidth=1.5, show.legend=FALSE) +
+            geom_point(data=this.df2, 
+                       aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
+            scale_shape_manual(limits=c("High","Low"), values=c(2,6), 
+                               na.translate=FALSE, guide = guide_legend(order = 99)) +
+            scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
+            labs(x="Age",
+                 y="Outcome value",
+                 shape="Conditional performance",
+                 pattern_fill="") +
+            theme_bw() +
+            theme(legend.position="bottom", legend.direction = "horizontal",
+                  legend.box="vertical")
+        }
+
+        
         } else{
         outplot  <- outplot +
                     new_scale("shape")+
@@ -900,9 +1036,6 @@ server <- function(input, output, session) {
                     scale_shape_manual(limits=c("High","Low"), values=c(2,6),
                                        na.translate=FALSE, guide = guide_legend(order = 99)) +
                     scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
-                    geom_point(data=filter(this.df, singleobs==TRUE),
-                               aes(y=value),
-                               shape=4, size=4, stroke=2, show.legend=FALSE) +
                     labs(x="Age",
                          y="Outcome value",
                          shape="Conditional performance",
@@ -973,9 +1106,6 @@ server <- function(input, output, session) {
         
         ## Plot formatting and add current age
         outplot<- outplot +
-                  facet_wrap(~variable.f, 
-                             ncol=pmin(limits$ncol[1],3),
-                             scales="free_y")+
                   theme(text=element_text(size=18),
                         legend.text=element_text(size=14))+
                   new_scale("linetype")+
@@ -1094,27 +1224,27 @@ server <- function(input, output, session) {
         df.amp<-  df.amp %>%
                   mutate(id = gsub("WRAP", "", Name)) %>%
                   filter(id==inid) %>%
-                  mutate(amp_bin = case_when(Result %in% c("Detected-1", "Detected-2") ~ 2,
+                  mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                              Result %in% c("Not Detected") ~ 1,
-                                             Result %in% c("QNS", "Indeterminate") ~ NA),
+                                             Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
                          age=case_when(shareable_age_at_appointment == ">90" ~ 90,
                                        TRUE ~ as.numeric(shareable_age_at_appointment)))%>%
                   select(id, age_amp=age, Result, amp_bin)
       }else{
         df.amp<-  df.amp %>% 
                   filter(id==inid) %>%
-                  mutate(amp_bin = case_when(Result %in% c("Detected-1", "Detected-2") ~ 2,
+                  mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                              Result %in% c("Not Detected") ~ 1,
-                                             Result %in% c("QNS", "Indeterminate") ~ NA)) %>%
+                                             Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA)) %>%
                   select(id, age_amp=age, Result, amp_bin)
       }
       
       df.amp.merge<-  df.amp %>%
                       arrange(age_amp) %>%
                       group_by(age_amp) %>% slice(1) %>% ungroup() %>%
-                      select(-amp_bin) %>%
+                      select(id, age_amp, aSyn=Result) %>%
                       mutate(Biomarker="aSyn") %>%
-                      pivot_longer(cols=c(Result),
+                      pivot_longer(cols=c(aSyn),
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age=age_amp, Variable, Value)
@@ -1122,9 +1252,9 @@ server <- function(input, output, session) {
       df.mk.merge<-   df.mk %>%
                       arrange(age_mk) %>%
                       group_by(age_mk) %>% slice(1) %>% ungroup() %>%
-                      select(-mk_bin_total) %>%
+                      select(id, age_mk, MK_SUVR_MTL=mk_MTL_bin, MK_VR=mk_vr_bin) %>%
                       mutate(Biomarker="MK6240") %>%
-                      pivot_longer(cols=c(mk_MTL_bin,mk_vr_bin),
+                      pivot_longer(cols=c(MK_SUVR_MTL,MK_VR),
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age=age_mk, Variable, Value)
@@ -1132,9 +1262,9 @@ server <- function(input, output, session) {
       df.ptau.merge<- df.ptau %>%
                       arrange(age_ptau) %>%
                       group_by(age_ptau) %>% slice(1) %>% ungroup() %>%
-                      select(-ptau_bin) %>%
+                      select(id, age_ptau, pTau217=mean_conc) %>%
                       mutate(Biomarker="pTau217") %>%
-                      pivot_longer(cols=c(mean_conc),
+                      pivot_longer(cols=c(pTau217),
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age=age_ptau, Variable, Value)
@@ -1142,8 +1272,11 @@ server <- function(input, output, session) {
       df.csf.merge<-  df.csf %>%
                       arrange(age_csf) %>%
                       group_by(age_csf) %>% slice(1) %>% ungroup() %>%
-                      mutate(Biomarker="pTau/AB42") %>%
-                      pivot_longer(cols=c(pTau_Abeta42_bin),
+                      select(id, age_csf, pTau181_Abeta42=pTau_Abeta42_bin) %>%
+                      mutate(Biomarker="pTau181/AB42",
+                             pTau181_Abeta42 = case_when(pTau181_Abeta42==1~ "A+", 
+                                                          pTau181_Abeta42==0 ~ "A-")) %>%
+                      pivot_longer(cols=c(pTau181_Abeta42),
                                    names_to = "Variable",
                                    values_to="Value") %>%
                       select(id, Biomarker, age=age_csf, Variable, Value)
@@ -1151,22 +1284,23 @@ server <- function(input, output, session) {
       df.pib.merge<-  df.pib %>%
                       arrange(age) %>%
                       group_by(age) %>% slice(1) %>% ungroup() %>%
-                      select(id, age, pib_index, amyloid_vr) %>%
-                      mutate(Biomarker="PiB/NAV") %>%
-                      pivot_longer(cols=c(pib_index, amyloid_vr),
-                                   names_to = "Variable",
-                                   values_to="Value") %>%
-                      select(id, Biomarker, age, Variable, Value)
+                      select(id, age, PiB_DVR=pib_index, Amyloid_VR=amyloid_vr) %>%
+                        mutate(Biomarker="PiB/NAV") %>%
+                        pivot_longer(cols=c(PiB_DVR, Amyloid_VR),
+                                     names_to = "Variable",
+                                     values_to="Value") %>%
+                        select(id, Biomarker, age, Variable, Value)
         } else{
         df.pib.merge<- df.pib %>%
                       arrange(age) %>%
                       group_by(age) %>% slice(1) %>% ungroup() %>%
                       select(id, age, pib_trunc) %>%
-                      mutate(Biomarker="PiB/NAV") %>%
-                      pivot_longer(cols=c(pib_trunc),
-                                   names_to = "Variable",
-                                   values_to="Value") %>%
-                      select(id, Biomarker, age, Variable, Value)
+                      select(id, age, PiB_trunc=pib_trunc) %>%
+                        mutate(Biomarker="PiB/NAV") %>%
+                        pivot_longer(cols=c(PiB_trunc),
+                                     names_to = "Variable",
+                                     values_to="Value") %>%
+                        select(id, Biomarker, age, Variable, Value)
         }
       
       df<-  rbind(df.amp.merge, df.mk.merge) %>%
