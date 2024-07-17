@@ -640,7 +640,7 @@ server <- function(input, output, session) {
       
       if (vislabel==TRUE) {
         padding <- ifelse(dyn.axis==TRUE, 20, 16)
-        
+        ## Adding facet_wrap and facetted_pos_scales here for differing scales to work. 
         outplot<- outplot +
                   geom_text_repel(data=this.df,
                                   aes(x=age, y=0,
@@ -651,8 +651,8 @@ server <- function(input, output, session) {
                                   segment.colour=NA,
                                   size=this.df$annosize[1])+
                   facet_wrap(~variable.f, 
-                                       ncol=pmin(limits$ncol[1],3),
-                                       scales="free_y")
+                             ncol=pmin(limits$ncol[1],3),
+                             scales="free_y")
       } else{
         outplot<- outplot +
           facet_wrap(~variable.f, 
@@ -977,7 +977,7 @@ server <- function(input, output, session) {
          all(this.df$sign=="High" | is.na(this.df$sign)) |
          all(this.df$sign=="Low" | is.na(this.df$sign)) ) {
 
-        this.df_2<- this.df %>%
+        this.df2<- this.df %>%
                     add_row(sign="High", variable.f=this.df$variable.f[1]) %>%
                     add_row(sign="Low", variable.f=this.df$variable.f[1])
 
