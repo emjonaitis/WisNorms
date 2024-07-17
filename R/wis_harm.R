@@ -38,7 +38,8 @@ wis_harm <- function(data, raw.names, id="Reggieid", source="Data.Source", visno
   data.nomiss.long <- group_by(data.use, id.tmp, source.tmp, visno.tmp) %>%
                       gather(key="variable", value="value", raw.names) %>%
                       ungroup() %>%
-                      mutate(variable.xw = paste(variable, "xw", sep="."),
+                      mutate(variable = tolower(variable),
+                             variable.xw = paste(variable, "xw", sep="."),
                              value.nomiss = mapply(FUN=convert_missing, x=value, raw.name=variable, source=source.tmp))
   data.nomiss.wide <- select(data.nomiss.long,
                                     id.tmp, source.tmp, visno.tmp, variable, value.nomiss) %>%
