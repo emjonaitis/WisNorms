@@ -34,6 +34,7 @@ wis_harm <- function(data, raw.names, id="Reggieid", source="Data.Source", visno
       stop("Currently supported values of source for this module: ADRC, WRAP")
     }
   }
+  message(paste("Raw names:", paste0(raw.names, collapse=", ")))
   data.covs      <- select(data, -raw.names)
   data.nomiss.long <- group_by(data.use, id.tmp, source.tmp, visno.tmp) %>%
                       gather(key="variable", value="value", raw.names) %>%
@@ -41,11 +42,13 @@ wis_harm <- function(data, raw.names, id="Reggieid", source="Data.Source", visno
                       mutate(variable = tolower(variable),
                              variable.xw = paste(variable, "xw", sep="."),
                              value.nomiss = mapply(FUN=convert_missing, x=value, raw.name=variable, source=source.tmp))
+  message(paste("Variable (long):", paste0(unique(data.nomiss.long$variable), collapse=", ")))
   data.nomiss.wide <- select(data.nomiss.long,
                                     id.tmp, source.tmp, visno.tmp, variable, value.nomiss) %>%
                       group_by(id.tmp, source.tmp, visno.tmp) %>%
                       spread(key="variable", value="value.nomiss", fill=NA) %>%
                       ungroup()
+  message(paste("Variable (wide):", paste0(colnames(data.nomiss.wide), collapse=", ")))
   # this is the problem: there is no target value matching animtotraw because it is raw
   data.xw          <- mutate(data.nomiss.long,
                              value.recode = mapply(FUN=recode_values, x=value.nomiss, raw.name=variable, source=source.tmp)) %>%
