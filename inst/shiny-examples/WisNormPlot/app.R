@@ -110,8 +110,8 @@ ui <- fluidPage(
                          choices = list("Annotate with visit labels" = 2,
                                         "Annotate with medical history" = 3,
                                         "Annotate with biomarkers" = 4
-                                        )
-                         #selected = c(2)
+                                        ),
+                         selected = c(2)
                          ),
 
       # Main panel for displaying outputs ----
