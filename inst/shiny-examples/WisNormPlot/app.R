@@ -110,8 +110,9 @@ ui <- fluidPage(
                          choices = list("Annotate with visit labels" = 2,
                                         "Annotate with medical history" = 3,
                                         "Annotate with biomarkers" = 4
-                                        ),
-                         selected = c(2)),
+                                        )
+                         #selected = c(2)
+                         ),
 
       # Main panel for displaying outputs ----
 
@@ -268,10 +269,15 @@ server <- function(input, output, session) {
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
-    dyn.axis <- TRUE
-    vislabel <- as.logical(max(grepl("2", input$options)))
-    mh <- as.logical(max(grepl("3", input$options)))
-    biomarkers <- as.logical(max(grepl("4", input$options)))
+    if(!is.null(input$options)){
+        vislabel<- as.logical(max(grepl("2", input$options)))
+        mh<- as.logical(max(grepl("3", input$options)))
+        biomarkers<- as.logical(max(grepl("4", input$options)))
+      } else {
+        vislabel<- FALSE
+        mh<- FALSE
+        biomarkers<- FALSE
+      }
     
     ownData<- ownData()
 
@@ -311,7 +317,9 @@ server <- function(input, output, session) {
                                      levels=varnames,
                                      labels=varlabels))
     
-    df.mh <- mhInput()
+    if(mh==TRUE){
+      df.mh <- mhInput()
+    }
     
     if(biomarkers==TRUE) {
       df.pib <- pibInput()
@@ -514,7 +522,7 @@ server <- function(input, output, session) {
       rownames(intercepts) <- intercepts$name
       intercepts<-select(intercepts, -name)
       
-      int.miss<-  (nrow(na.exclude(intercepts.long))==0)
+      int.miss<-  ((nrow(na.exclude(intercepts.long))==0) | (all(is.na(this.df$best.q.c)) & all(is.na(this.df$best.q.unc))))
 
       slopes.raw <- expand.grid(unique(coef.long$name),
                                 unique(coef.long$tau),
@@ -584,8 +592,6 @@ server <- function(input, output, session) {
                       ungroup()
       }
 
-      if (dyn.axis==TRUE) {
-        message("Dynamic axis on.")
         limits <- limits %>%
                   mutate(highpoint = pmax(highobs, highfun, na.rm=TRUE),
                          lowpoint = pmax(1, pmin(lowobs, lowfun, na.rm=TRUE)),
@@ -597,7 +603,6 @@ server <- function(input, output, session) {
                                           highpoint + pmax(1, 0.1*highpoint))) %>%
                   ungroup() %>%
                   mutate(ncol = length(unique(variable)))
-      } 
 
       if (int.miss==FALSE) {
         limits<-  merge(limits, myfun.ymin, all.x=TRUE) %>%
@@ -639,7 +644,6 @@ server <- function(input, output, session) {
         names(annonudge.vec) <- unique(this.df$variable)
       
       if (vislabel==TRUE) {
-        padding <- ifelse(dyn.axis==TRUE, 20, 16)
         ## Adding facet_wrap and facetted_pos_scales here for differing scales to work. 
         outplot<- outplot +
                   geom_text_repel(data=this.df,
@@ -852,7 +856,6 @@ server <- function(input, output, session) {
         
         ## PiB
         if (nrow(df.pib)==0) {
-          # Two rows are ghost rows for scaling purposes
           message("No PiB observed for this participant")
           if(csf==TRUE|ptau==TRUE|mk==TRUE|amp==TRUE){
             outplot<- outplot +
@@ -978,21 +981,42 @@ server <- function(input, output, session) {
          all(this.df$sign=="Low" | is.na(this.df$sign)) ) {
 
         this.df2<- this.df %>%
+                    mutate(no_percentile = ifelse(is.na(best.q.c) & is.na(best.q.unc) & !singleobs %in% c(T), T, NA)) %>%
                     add_row(sign="High", variable.f=this.df$variable.f[1]) %>%
-                    add_row(sign="Low", variable.f=this.df$variable.f[1])
+                    add_row(sign="Low", variable.f=this.df$variable.f[1]) 
+        
+        outplot <-  outplot +
+          new_scale("shape")+
+          geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
+          geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
+          geom_line(aes(y=value, group=id),
+                    data=this.df2, linewidth=1.5, show.legend=FALSE) +
+          geom_point(data=this.df2, 
+                     aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
+          scale_shape_manual(limits=c("High","Low"), values=c(2,6), 
+                             na.translate=FALSE, guide = guide_legend(order = 99)) +
+          scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none")
 
         if(any(this.df$singleobs)==TRUE){
+          
+          ## Adding for those that have single observations and no percentiles
+          if(any(this.df2$no_percentile) %in% c(TRUE)){
+            outplot <-  outplot +
+              geom_point(data=filter(this.df, singleobs==TRUE),
+                         aes(y=value),
+                         shape=4, size=4, stroke=2, show.legend=F) +
+              geom_point(data=filter(this.df2, no_percentile==TRUE & !singleobs %in% c(TRUE)),
+                         aes(y=value),
+                         shape=4, size=4, stroke=2, show.legend=F) +
+              labs(x="Age",
+                   y="Outcome value",
+                   shape="Conditional performance",
+                   pattern_fill="") +
+              theme_bw() +
+              theme(legend.position="bottom", legend.direction = "horizontal",
+                    legend.box="vertical")
+          } else{
           outplot <-  outplot +
-            new_scale("shape")+
-            geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
-            geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
-            geom_line(aes(y=value, group=id),
-                      data=this.df2, linewidth=1.5, show.legend=FALSE) +
-            geom_point(data=this.df2, 
-                       aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
-            scale_shape_manual(limits=c("High","Low"), values=c(2,6), 
-                               na.translate=FALSE, guide = guide_legend(order = 99)) +
-            scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
             geom_point(data=filter(this.df, singleobs==TRUE),
                        aes(y=value),
                        shape=4, size=4, stroke=2, show.legend=F) +
@@ -1003,18 +1027,22 @@ server <- function(input, output, session) {
             theme_bw() +
             theme(legend.position="bottom", legend.direction = "horizontal",
                   legend.box="vertical")
-        } else {
+          }
+          
+        } else if(any(this.df2$no_percentile) %in% c(TRUE)){
           outplot <-  outplot +
-            new_scale("shape")+
-            geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
-            geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
-            geom_line(aes(y=value, group=id),
-                      data=this.df2, linewidth=1.5, show.legend=FALSE) +
-            geom_point(data=this.df2, 
-                       aes(y=value, shape=sign, alpha=alpha), size=4, stroke=2) +
-            scale_shape_manual(limits=c("High","Low"), values=c(2,6), 
-                               na.translate=FALSE, guide = guide_legend(order = 99)) +
-            scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
+            geom_point(data=filter(this.df2, no_percentile==TRUE),
+                       aes(y=value),
+                       shape=4, size=4, stroke=2, show.legend=F) +
+            labs(x="Age",
+                 y="Outcome value",
+                 shape="Conditional performance",
+                 pattern_fill="") +
+            theme_bw() +
+            theme(legend.position="bottom", legend.direction = "horizontal",
+                  legend.box="vertical")
+          } else {
+          outplot <- outplot +
             labs(x="Age",
                  y="Outcome value",
                  shape="Conditional performance",
@@ -1175,7 +1203,11 @@ server <- function(input, output, session) {
   output$biotable<- renderTable({
     req(input$id)
     
-    biomarkers <- as.logical(max(grepl("4", input$options)))
+    if(!is.null(input$options)){
+      biomarkers<- as.logical(max(grepl("4", input$options)))
+    } else {
+      biomarkers<- FALSE
+    }
     inid  <- str_pad(input$id, 4, side="left", pad="0")
     ownData<- ownData()
     

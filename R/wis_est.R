@@ -55,7 +55,7 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
       raw.names <- colnames(redata)[colnames(redata) %in% unique(target$variable) |
                                       colnames(redata) %in% unique(missval$variable)]
     }
-    harmdata <- wis_harm(redata, raw.names=raw.names, id="id.tmp", source="source.tmp", visno="visno.tmp")
+    harmdata <- WisNorms2::wis_harm(redata, raw.names=raw.names, id="id.tmp", source="source.tmp", visno="visno.tmp")
     harm.names <- colnames(harmdata)
     pacc3.trlb.use   <- as.logical(min(c("trlb.xw","lm_del.xw","ttotal") %in% harm.names))
     pacc4.trlb.use   <- as.logical(min(c("trlb.xw","lm_del.xw","ttotal","mmse.xw") %in% harm.names))
@@ -76,10 +76,11 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
   else {
     usedata <- redata
   }
-    base <- filter(usedata, !is.na(readcat.xw)) %>%
+    base <- usedata %>%
+          #filter(!is.na(readcat.xw)) %>%
           group_by(id.tmp) %>%
           arrange(visno.tmp) %>%
-          summarize(base.readcat.f = factor(first(readcat.xw), levels=c(3,2,1,0), ordered=TRUE)) %>%
+          summarize(base.readcat.f = factor(first(readcat.xw, na_rm=TRUE), levels=c(3,2,1,0), ordered=TRUE)) %>%
           ungroup()
   contrasts(base$base.readcat.f) <- contr.treatment(n=c(3:0), base=1) # Comparison group: Highest reading category
   usedata <- merge(usedata, base) %>%
@@ -250,7 +251,9 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
                select(id, source, visno, variable, value, best.q.c, best.q.unc,
                       age.L, age.Q, age.C, gender.f, ed.ba.f, base.readcat.f, practice, Summary.Diagnosis) %>%
                mutate(best.q.c = if_else(variable %in% c("trla","trlb.xw"), 1-best.q.c, best.q.c),
-                      best.q.unc = if_else(variable %in% c("trla","trlb.xw"), 1-best.q.unc, best.q.unc)) %>%
+                      best.q.unc = if_else(variable %in% c("trla","trlb.xw"), 1-best.q.unc, best.q.unc),
+                      best.q.c = if_else(is.na(base.readcat.f), NA, best.q.c),
+                      best.q.unc = if_else(is.na(base.readcat.f), NA, best.q.unc)) %>%
                filter(!is.na(visno)) %>%
                arrange(variable, id, visno)
   return(outdata)
