@@ -55,7 +55,7 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
       raw.names <- colnames(redata)[colnames(redata) %in% unique(target$variable) |
                                       colnames(redata) %in% unique(missval$variable)]
     }
-    harmdata <- WisNorms2::wis_harm(redata, raw.names=raw.names, id="id.tmp", source="source.tmp", visno="visno.tmp")
+    harmdata <- wis_harm(redata, raw.names=raw.names, id="id.tmp", source="source.tmp", visno="visno.tmp")
     harm.names <- colnames(harmdata)
     pacc3.trlb.use   <- as.logical(min(c("trlb.xw","lm_del.xw","ttotal") %in% harm.names))
     pacc4.trlb.use   <- as.logical(min(c("trlb.xw","lm_del.xw","ttotal","mmse.xw") %in% harm.names))
