@@ -8,7 +8,6 @@
 #' @keywords Wisconsin, WRAP, ADRC
 #' @export
 #' @importFrom dplyr recode
-#' @examples
 #' @seealso \code{\link{wis_harm}}
 
 recode_values <- function(x, raw.name, source=Data.Source) {

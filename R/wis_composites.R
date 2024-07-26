@@ -12,7 +12,6 @@
 #' @importFrom tidyr gather spread
 #' @seealso \code{\link{wis_est}, \link{wis_harm}}
 #' @export
-#' @examples
 
 wis_composites <- function(data, id, source, visno) {
   # if (is.null(raw.names) | !is.character(raw.names) | !(min(raw.names %in% missval$variable)==TRUE)) {

@@ -20,7 +20,6 @@
 #' @importFrom tidyr gather spread
 #' @seealso \code{\link{wis_harm}}
 #' @export
-#' @examples
 
 wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
                    raw=TRUE, raw.names=NULL, id="subjid", source="Data.Source", age="age", visno="Visit_Number", gender="gender",

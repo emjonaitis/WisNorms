@@ -8,7 +8,6 @@
 #' @seealso \code{\link{wis_harm}}
 #' @keywords Wisconsin, WRAP, ADRC
 #' @export
-#' @examples
 
 convert_missing <- function(x, raw.name, source) {
   # if (is.null(raw.name) | !is.character(raw.name) | !(raw.name %in% missval$variable)) {

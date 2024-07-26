@@ -13,7 +13,6 @@
 #' @importFrom tidyr gather spread
 #' @seealso \code{\link{wis_est}}
 #' @export
-#' @examples
 
 wis_harm <- function(data, raw.names, id="Reggieid", source="Data.Source", visno="Visit_Number") {
   # if (is.null(raw.names) | !is.character(raw.names) | !(min(raw.names %in% missval$variable)==TRUE)) {
