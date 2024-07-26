@@ -198,7 +198,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                   NA, max(alpha, na.rm=TRUE))) %>%
       ungroup()
     limits  <- merge(limits, alphalim)
-    this.unccoefs <- dplyr::filter(unccoefs,
+    this.unccoefs <- dplyr::filter(unccoefs.rds,
                             name %in% var)
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
