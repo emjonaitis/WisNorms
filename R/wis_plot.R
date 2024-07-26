@@ -15,7 +15,7 @@
 #' @return Plot containing indidvidual longitudinal trajectories for selected WisNorms variables.
 #' @keywords Wisconsin, ADRC, WRAP, crosswalk, harmonization
 #' @importFrom magrittr "%>%"
-#' @importFrom dplyr ungroup group_by select filter summarize mutate rename arrange recode case_when last
+#' @importFrom dplyr ungroup group_by select filter summarize mutate rename arrange recode case_when first last
 #' @importFrom tidyr gather spread
 #' @importFrom stringr str_pad
 #' @import ggplot2
