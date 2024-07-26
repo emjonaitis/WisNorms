@@ -203,7 +203,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
       rename(variable=name) %>%
-      slice(1) %>%
+      dplyr::slice(1) %>%
       ungroup()
     limits <-  merge(nlines.df, limits)
     
@@ -505,29 +505,29 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     if (!is.null(biomarkers)) {
       
       if (pib) { df.pib_lim<-  merge(this.df, df.pib %>% rename(age_pib=age), all=T) %>%
-        group_by(variable, visno, age_pib) %>% slice(1) %>% ungroup() %>%
+        group_by(variable, visno, age_pib) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pib_trunc=1.10, age_pib=-1, variable.f=limits$variable.f[1]) %>%
         add_row(pib_trunc=1.19, age_pib=-1, variable.f=limits$variable.f[1]) }
 
       if (csf) { df.csf_lim<-  merge(this.df, df.csf, all=T) %>%
-        group_by(variable, visno, age_csf) %>% slice(1) %>% ungroup() %>%
+        group_by(variable, visno, age_csf) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pTau_Abeta42_bin=0, age_csf=-1, variable.f=limits$variable.f[1]) %>%
         add_row(pTau_Abeta42_bin=1, age_csf=-1, variable.f=limits$variable.f[1]) }
       
       if (ptau) { df.ptau_lim<- merge(this.df, df.ptau, all=T) %>% 
-        group_by(variable, visno, age_ptau) %>% slice(1) %>% ungroup() %>%
+        group_by(variable, visno, age_ptau) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(ptau_bin=1, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
         add_row(ptau_bin=2, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
         add_row(ptau_bin=3, age_ptau=-1, variable.f=limits$variable.f[1]) }
       
       if (mk) { df.mk_lim<-   merge(this.df, df.mk, all=T) %>% 
-        group_by(variable, visno, age_mk) %>% slice(1) %>% ungroup() %>%
+        group_by(variable, visno, age_mk) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(mk_bin_total=1, age_mk=-1, variable.f=limits$variable.f[1]) %>%
         add_row(mk_bin_total=2, age_mk=-1, variable.f=limits$variable.f[1]) %>%
         add_row(mk_bin_total=3, age_mk=-1, variable.f=limits$variable.f[1]) }
       
       if (amp) { df.amp_lim<-  merge(this.df, df.amp, all=T) %>% 
-        group_by(variable, visno, age_amp) %>% slice(1) %>% ungroup() %>%
+        group_by(variable, visno, age_amp) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(amp_bin=1, age_amp=-1, variable.f=limits$variable.f[1]) %>%
         add_row(amp_bin=2, age_amp=-1, variable.f=limits$variable.f[1]) %>%
         add_row(amp_bin=NA, age_amp=-1, variable.f=limits$variable.f[1]) }
@@ -613,7 +613,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         outplot<- outplot + guides(colour="none")
         
         limits<-  df.pib %>% arrange(age) %>%
-          slice(n()) %>%
+          dplyr::slice(n()) %>%
           mutate(my.pibmin=pmin(eaoa_1p19_gbtm, eaoa_1p19_sila, na.rm=TRUE),
                  my.pibmax=pmax(eaoa_1p19_gbtm, eaoa_1p19_sila, na.rm=TRUE),
                  my.pibmean=if_else(is.na(eaoa_1p19_mean) | is.na(eaoa_1p19_sila),
@@ -651,7 +651,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                    name="Biomarker") +
             geom_point(data=df.pib_lim, aes(x=age_pib, y=my.ymin + 1.05*(my.ymax-my.ymin), 
                                             colour=pib_trunc, shape="PiB/NAV"),  size=4)+
-            geom_rect_pattern(data=slice(df.pib, 1),
+            geom_rect_pattern(data=dplyr::slice(df.pib, 1),
                               aes(xmin=limits$my.pibmin[1],
                                   xmax=limits$my.pibmax[1],
                                   ymin=-Inf,
