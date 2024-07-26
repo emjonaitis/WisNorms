@@ -15,7 +15,7 @@
 #' @return Plot containing indidvidual longitudinal trajectories for selected WisNorms variables.
 #' @keywords Wisconsin, ADRC, WRAP, crosswalk, harmonization
 #' @importFrom magrittr "%>%"
-#' @importFrom dplyr ungroup group_by select filter summarize mutate rename arrange recode case_when
+#' @importFrom dplyr ungroup group_by select filter summarize mutate rename arrange recode case_when last
 #' @importFrom tidyr gather spread
 #' @importFrom stringr str_pad
 #' @import ggplot2
@@ -160,7 +160,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
   this.df <- filter(df,
                     variable %in% var) %>%
     group_by(id) %>% arrange(visno, .by_group=T) %>%
-    mutate(cur_age = last(age, na_rm=T)) %>% ungroup()
+    mutate(cur_age = dplyr::last(age, na_rm=T)) %>% ungroup()
   
   limits  <- group_by(this.df, variable, variable.f) %>%
     summarize(testmin = pmin(min(value, na.rm=TRUE), 0),
@@ -209,7 +209,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     
     demos   <- arrange(this.df, visno) %>%
       summarize(source=first(source),
-                last_dx=last(Summary.Diagnosis),
+                last_dx=dplyr::last(Summary.Diagnosis),
                 gender.f=first(gender.f),
                 ed.ba.f=first(ed.ba.f),
                 base.readcat.f=first(base.readcat.f),
@@ -312,7 +312,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         ungroup()
       myfun.ymin <- group_by(myfun.labs, variable) %>%
         arrange(y) %>%
-        summarize(lab.ymin=first(y), lab.ymax=last(y)) %>%
+        summarize(lab.ymin=first(y), lab.ymax=dplyr::last(y)) %>%
         ungroup()
     }
     
