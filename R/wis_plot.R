@@ -81,7 +81,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       mh <- FALSE
     } else if (nrow(biomarkers$mh) > 0) {
       message("I see an mh dataset")
-      df.mh <- biomarkers$mh %>% filter(id==inid)
+      df.mh <- biomarkers$mh %>% dplyr::filter(id==inid)
       mh <- TRUE
     } else { mh <- FALSE }
     if (is.null(biomarkers$pib)) {
@@ -89,7 +89,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       pib <- FALSE
     } else if (nrow(biomarkers$pib) > 0) {
       message("I see a pib dataset")
-      df.pib <- biomarkers$pib %>% filter(id==inid)
+      df.pib <- biomarkers$pib %>% dplyr::filter(id==inid)
       pib <- TRUE
     } else { pib <- FALSE }
     if (is.null(biomarkers$csf)) {
@@ -98,7 +98,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     } else if (nrow(biomarkers$csf) > 0) {
       message("I see a csf dataset")
       df.csf <- biomarkers$csf %>% 
-        filter(id==inid) %>%
+        dplyr::filter(id==inid) %>%
         rename(age_csf=age) %>%
         mutate(pTau_Abeta42_bin = ifelse(is.na(pTau_Abeta42_bin), NA, pTau_Abeta42_bin))
       csf <- TRUE
@@ -110,7 +110,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       message("I see a ptau dataset")
       df.ptau <- biomarkers$ptau %>%
         mutate(id = gsub("WRAP", "", enumber)) %>%
-        filter(id==inid) %>%
+        dplyr::filter(id==inid) %>%
         mutate(mean_conc=as.numeric(mean_conc),
                ptau_bin = dplyr::case_when(mean_conc<=0.4 ~ 1,
                                     mean_conc>0.4 & mean_conc<0.63 ~ 2,
@@ -125,7 +125,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     } else if (nrow(biomarkers$mk) > 0) {
       message("I see a mk dataset")
       df.mk <- biomarkers$mk %>% 
-        filter(id==inid) %>%
+        dplyr::filter(id==inid) %>%
         mutate(mk_bin_combined = dplyr::case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
                                            is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin,
         ),
@@ -144,7 +144,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       message("I see a amp dataset")
       df.amp <- biomarkers$amp %>%
         mutate(id = gsub("WRAP", "", Name)) %>%
-        filter(id==inid) %>%
+        dplyr::filter(id==inid) %>%
         mutate(amp_bin = dplyr::case_when(Result %in% c("Detected-1") ~ 2,
                                    Result %in% c("Not Detected") ~ 1,
                                    Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
@@ -157,7 +157,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
 
   # Restrict to desired variables
   # On full set, set testmin
-  this.df <- filter(df,
+  this.df <- dplyr::filter(df,
                     variable %in% var) %>%
     group_by(id) %>% arrange(visno, .by_group=T) %>%
     mutate(cur_age = dplyr::last(age, na_rm=T)) %>% ungroup()
@@ -175,7 +175,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                   levels=c(-1,1), labels=c("Low","High")),
                     alpha = ifelse(is.na(this.df$best.q.c), NA,
                                    I(((abs(this.df$best.q.c - 0.5) * 100)^4)/(50^4)))) %>%
-             filter(id==inid) %>%
+             dplyr::filter(id==inid) %>%
              mutate(age=age.L+meanage)
 
   if (nrow(this.df)==0) {
@@ -198,7 +198,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                   NA, max(alpha, na.rm=TRUE))) %>%
       ungroup()
     limits  <- merge(limits, alphalim)
-    this.unccoefs <- filter(unccoefs,
+    this.unccoefs <- dplyr::filter(unccoefs,
                             name %in% var)
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
@@ -279,7 +279,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     
     if (int.miss==FALSE) {
       fun.xlim   <- group_by(limits, variable) %>%
-        filter(variable %in% rownames(intercepts)) %>%
+        dplyr::filter(variable %in% rownames(intercepts)) %>%
         do(expand.grid(x=c(.$minage:.$maxage), v=.$variable, t=c(1:.$nlines),
                        stringsAsFactors=FALSE)) %>%
         ungroup() %>%
@@ -297,7 +297,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         data.frame()
       
       myfun.labs <- group_by(limits, variable) %>%
-        filter(variable %in% rownames(intercepts)) %>%
+        dplyr::filter(variable %in% rownames(intercepts)) %>%
         tidyr::expand(t=seq(1:nlines)) %>%
         ungroup() %>%
         merge(select(limits, variable, variable.f)) %>%
@@ -404,7 +404,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
           scale_y_continuous(breaks=seq(0, 25, 5), limits=c(0,NA))
         }, 
         if("theo.mem.xw.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Memory Composite (XW)")$my.ymax), 40), limits=c(0,NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="Memory Composite (XW)")$my.ymax), 40), limits=c(0,NA))
         })
       breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
       
@@ -415,10 +415,10 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       
       breaks_list<- list(
         if("trla" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="TMT-A")$my.ymax), 25), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="TMT-A")$my.ymax), 25), limits=c(0, NA))
         },
         if("trlb.xw" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="TMT-B")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="TMT-B")$my.ymax), 50), limits=c(0, NA))
         }, 
         if("waisrtot" %in% this.df$variable){
           scale_y_continuous(breaks=seq(0, 100, 25), limits=c(0, NA))
@@ -434,10 +434,10 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       
       breaks_list<- list(
         if("animtotraw" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Animal Naming")$my.ymax), 20), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="Animal Naming")$my.ymax), 20), limits=c(0, NA))
         },
         if("cfl.xw" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="Letter Fluency (CFL) (XW)")$my.ymax), 20), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="Letter Fluency (CFL) (XW)")$my.ymax), 20), limits=c(0, NA))
         })
       
       breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
@@ -449,19 +449,19 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       
       breaks_list<- list(
         if("pacc3.cfl.xw.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-CFL")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-CFL")$my.ymax), 50), limits=c(0, NA))
         },
         if("pacc3.an.xw.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-AN")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-AN")$my.ymax), 50), limits=c(0, NA))
         },
         if("pacc3.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC3-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-DS")$my.ymax), 50), limits=c(0, NA))
         },
         if("pacc4.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC4-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC4-DS")$my.ymax), 50), limits=c(0, NA))
         },
         if("pacc5.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(filter(limits, variable.f=="PACC5-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC5-DS")$my.ymax), 50), limits=c(0, NA))
         })
       
       breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
@@ -735,10 +735,10 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         ## Adding for those that have single observations and no percentiles
         if(any(this.df2$no_percentile) %in% c(TRUE)){
           outplot <-  outplot +
-            geom_point(data=filter(this.df, singleobs==TRUE),
+            geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
                        aes(y=value),
                        shape=4, size=4, stroke=2, show.legend=F) +
-            geom_point(data=filter(this.df2, no_percentile==TRUE & !singleobs %in% c(TRUE)),
+            geom_point(data=dplyr::filter(this.df2, no_percentile==TRUE & !singleobs %in% c(TRUE)),
                        aes(y=value),
                        shape=4, size=4, stroke=2, show.legend=F) +
             labs(x="Age",
@@ -750,7 +750,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                   legend.box="vertical")
         } else{
           outplot <-  outplot +
-            geom_point(data=filter(this.df, singleobs==TRUE),
+            geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
                        aes(y=value),
                        shape=4, size=4, stroke=2, show.legend=F) +
             labs(x="Age",
@@ -764,7 +764,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         
       } else if(any(this.df2$no_percentile) %in% c(TRUE)){
         outplot <-  outplot +
-          geom_point(data=filter(this.df2, no_percentile==TRUE),
+          geom_point(data=dplyr::filter(this.df2, no_percentile==TRUE),
                      aes(y=value),
                      shape=4, size=4, stroke=2, show.legend=F) +
           labs(x="Age",
@@ -807,7 +807,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     }
     
     if (mh==TRUE) {
-      df.mh      <- filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
+      df.mh      <- dplyr::filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
       if (nrow(df.mh)==0) {
         mh <- FALSE
       } else {

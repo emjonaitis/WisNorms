@@ -12,14 +12,14 @@ library(stringr)
 library(patchwork)
 
 # modified for testing
-unccoefs <- readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot/data/unccoefs.rds")
-sample_df <- readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_df.rds")
-sample_mh <- readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_mh.rds")
-sample_pib <- readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_pib.rds")
-sample_csf <- readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_csf.rds")
-sample_amp<-  readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_amp.rds")
-sample_mk<-  readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_mk.rds")
-sample_ptau<-  readRDS("C:/Users/jonaitis/Documents/R-devel/WisNorms/inst/shiny-examples/WisNormPlot//data/sample_ptau.rds")
+unccoefs <- readRDS("./data/unccoefs.rds")
+sample_df <- readRDS("./data/sample_df.rds")
+sample_mh <- readRDS("./data/sample_mh.rds")
+sample_pib <- readRDS("./data/sample_pib.rds")
+sample_csf <- readRDS("./data/sample_csf.rds")
+sample_amp<-  readRDS("./data/sample_amp.rds")
+sample_mk<-  readRDS("./data/sample_mk.rds")
+sample_ptau<-  readRDS("./data/sample_ptau.rds")
 meanage  <- 58.9
 
 
