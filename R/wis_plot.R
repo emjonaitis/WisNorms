@@ -112,7 +112,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         mutate(id = gsub("WRAP", "", enumber)) %>%
         filter(id==inid) %>%
         mutate(mean_conc=as.numeric(mean_conc),
-               ptau_bin = case_when(mean_conc<=0.4 ~ 1,
+               ptau_bin = dplyr::(mean_conc<=0.4 ~ 1,
                                     mean_conc>0.4 & mean_conc<0.63 ~ 2,
                                     mean_conc >= 0.63 ~ 3),
                age_ptau=age_at_appointment) %>%
@@ -126,10 +126,10 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       message("I see a mk dataset")
       df.mk <- biomarkers$mk %>% 
         filter(id==inid) %>%
-        mutate(mk_bin_combined = case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
+        mutate(mk_bin_combined = dplyr::(!is.na(mk_vr_bin) ~ mk_vr_bin,
                                            is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin,
         ),
-        mk_bin_total = case_when(is.na(mk_bin_combined) ~ NA,
+        mk_bin_total = dplyr::(is.na(mk_bin_combined) ~ NA,
                                  mk_bin_combined %in% c("SUVR MTL-", "T-") ~ 1,
                                  mk_bin_combined %in% c("T+/MTL only") ~ 2,
                                  mk_bin_combined %in% c("SUVR MTL+", "T+/MTL & Neo") ~ 3)
@@ -145,10 +145,10 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
       df.amp <- biomarkers$amp %>%
         mutate(id = gsub("WRAP", "", Name)) %>%
         filter(id==inid) %>%
-        mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
+        mutate(amp_bin = dplyr::(Result %in% c("Detected-1") ~ 2,
                                    Result %in% c("Not Detected") ~ 1,
                                    Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
-               age=case_when(shareable_age_at_appointment == ">90" ~ 90,
+               age=dplyr::(shareable_age_at_appointment == ">90" ~ 90,
                              TRUE ~ as.numeric(shareable_age_at_appointment))) %>%
         select(id, age_amp=age, Result, amp_bin)
       amp <- TRUE
