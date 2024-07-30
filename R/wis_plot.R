@@ -9,6 +9,7 @@
 #' @param sub Column containing subject ID. Defaults to Reggieid.
 #' @param vislabel Logical indicating if visit labels should be displayed on plot.
 #' @param biomarker_list List of biomarker data sets.
+#' @param mh_list List of medical history data sets.
 #' @param ownData Logical indicating if using your own data or simulated data.
 #' @param path File path in which to store output plot. The plot filename will be created based on the sub and var parameters.
 #' @param width Width of output png file.
@@ -25,7 +26,7 @@
 #' @seealso \code{\link{wis_est}}
 #' @export
 
-wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData=TRUE, path=NULL, width=15, height=10) {
+wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list=NULL, ownData=TRUE, path=NULL, width=15, height=10) {
 
   message("Entering my wis_plot function.")
   meanage  <- 58.9
@@ -69,7 +70,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
   # Pulling biomarker datasets out of input list and filtering to id=inid
   if (is.null(biomarker_list)) {
     message("No biomarker list input.")
-    mh <- FALSE
     pib <- FALSE
     csf <- FALSE
     ptau <- FALSE
@@ -77,17 +77,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
     amp <- FALSE
   } else {
     message("Checking through availability of biomarker datasets")
-    
-    if (is.null(biomarker_list$mh)) {
-      message("No mh dataset")
-      mh <- FALSE
-    } else if (nrow(biomarker_list$mh) > 0) {
-      message("I see an mh dataset")
-      df.mh <- biomarker_list$mh %>% dplyr::filter(id==inid)
-      mh <- TRUE
-    } else { 
-      mh <- FALSE 
-    }
     
     if (is.null(biomarker_list$pib)) {
       message("No pib dataset")
@@ -193,9 +182,25 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
       } 
   }
 
+  if(is.null(mh_list)){
+    message("No medical history.")
+    mh<- FALSE
+  } else{
+        
+    if (is.null(mh_list$mh)) {
+      message("No mh dataset")
+      mh <- FALSE
+    } else if (nrow(mh_list$mh) > 0) {
+      message("I see an mh dataset")
+      df.mh <- mh_list$mh %>% dplyr::filter(id==inid)
+      mh <- TRUE
+    } else { 
+      mh <- FALSE 
+    }
+  }
+
   # Restrict to desired variables
   # On full set, set testmin
-  message("Selected variable of interest.")
   this.df <- dplyr::filter(df,
                     variable %in% var) %>%
     group_by(id) %>% arrange(visno, .by_group=T) %>%
@@ -224,7 +229,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
             axis.title=element_blank(),
             panel.background=element_rect(colour="white",fill="white"))
   } else {
-    message("Beginning plot")
     nobs    <- group_by(this.df, variable) %>%
       summarize(nobs=n(),
                 singleobs = (nobs==1)) %>%
@@ -238,10 +242,10 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
                                   NA, max(alpha, na.rm=TRUE))) %>%
       ungroup()
     limits  <- merge(limits, alphalim)
-    message("unccoefs.rds loading.")
+
     this.unccoefs <- dplyr::filter(unccoefs.rds,
                             name %in% var)
-    message("Success.")
+    
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
       rename(variable=name) %>%
@@ -389,7 +393,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
     }
     
     ## Start plot creation
-    message("Start Plot creation.")
     outplot  <- ggplot(this.df, aes(x=age)) +
       scale_x_continuous(limits=c(35,90))
     
@@ -544,7 +547,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
       
     }
     
-    message("Looking for biomarkers.")
     if (!is.null(biomarker_list)) {
       
       if (pib) { 
@@ -750,7 +752,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
         }
       }
     }
-    message("Biomarkers complete.")
     
     if (int.miss==FALSE) {
       outplot<- outplot +
@@ -764,7 +765,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
     
     # Below: dummy data to set y limits
     # Need to add ghost rows to show both High and Low arrows in legend:
-    message("Ghost rows for arrow legend.")
     if(all(is.na(this.df$sign)) |
        all(this.df$sign=="High" | is.na(this.df$sign)) |
        all(this.df$sign=="Low" | is.na(this.df$sign)) ) {
