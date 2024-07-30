@@ -5,14 +5,15 @@
 #' at the console. If given a path, this function will output the plot as a .png file. Otherwise, it will output
 #' the plot to the current session.
 #' @param data Vector containing the output of a wis_est call.
-#' @param var Names of the original variables. Should be among the following: anartraw, ANIMALS, AnimTotRaw, bnttot, bnttot30, BOSTON, CRAFTDRE, CRAFTURS, drraw, flucfl, LOGIMEM, MEMUNITS, MINTTOTS, ORRT.Unc_Std, readstn, TRAILA, TRAILB, trla, trlb, tTotal, ttotal, UDSVERTN, waisrtot, wmsrar, wmsrar2
+#' @param var Names of the original variables. Should be among the following: memory, execfn, language, global, animtotraw ttotal, drraw, cfl.xw, waisrtot, lm_imm.xw, lm_del.xw, theo.mem.xw.sca, pacc3.an.xw.sca , pacc3.wrap.sca, pacc4.wrap.sca, pacc5.wrap.sca, trla, trlb.xw
 #' @param sub Column containing subject ID. Defaults to Reggieid.
-#' @param vislabel Column containing data source. Defaults to Data.Source.
-#' @param biomarkers Column containing visit number. Defaults to Visit_Number.
+#' @param vislabel Logical indicating if visit labels should be displayed on plot.
+#' @param biomarker_list List of biomarker data sets.
+#' @param ownData Logical indicating if using your own data or simulated data.
 #' @param path File path in which to store output plot. The plot filename will be created based on the sub and var parameters.
 #' @param width Width of output png file.
 #' @param height Height of output png file.
-#' @return Plot containing indidvidual longitudinal trajectories for selected WisNorms variables.
+#' @return Plot containing individual longitudinal trajectories for selected WisNorms variables.
 #' @keywords Wisconsin, ADRC, WRAP, crosswalk, harmonization
 #' @importFrom magrittr "%>%"
 #' @import dplyr
@@ -24,7 +25,7 @@
 #' @seealso \code{\link{wis_est}}
 #' @export
 
-wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL, width=15, height=10) {
+wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData=TRUE, path=NULL, width=15, height=10) {
 
   message("Entering my wis_plot function.")
   meanage  <- 58.9
@@ -66,7 +67,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
   
 
   # Pulling biomarker datasets out of input list and filtering to id=inid
-  if (is.null(biomarkers)) {
+  if (is.null(biomarker_list)) {
     message("No biomarker list input.")
     mh <- FALSE
     pib <- FALSE
@@ -76,39 +77,51 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     amp <- FALSE
   } else {
     message("Checking through availability of biomarker datasets")
-    if (is.null(biomarkers$mh)) {
+    
+    if (is.null(biomarker_list$mh)) {
       message("No mh dataset")
       mh <- FALSE
-    } else if (nrow(biomarkers$mh) > 0) {
+    } else if (nrow(biomarker_list$mh) > 0) {
       message("I see an mh dataset")
-      df.mh <- biomarkers$mh %>% dplyr::filter(id==inid)
+      df.mh <- biomarker_list$mh %>% dplyr::filter(id==inid)
       mh <- TRUE
-    } else { mh <- FALSE }
-    if (is.null(biomarkers$pib)) {
+    } else { 
+      mh <- FALSE 
+    }
+    
+    if (is.null(biomarker_list$pib)) {
       message("No pib dataset")
       pib <- FALSE
-    } else if (nrow(biomarkers$pib) > 0) {
+    } else if (nrow(biomarker_list$pib) > 0) {
       message("I see a pib dataset")
-      df.pib <- biomarkers$pib %>% dplyr::filter(id==inid)
+      df.pib <- biomarker_list$pib %>% dplyr::filter(id==inid)
       pib <- TRUE
-    } else { pib <- FALSE }
-    if (is.null(biomarkers$csf)) {
+    } else { 
+      pib <- FALSE 
+    }
+    
+    if (is.null(biomarker_list$csf)) {
       message("No csf dataset")
       csf <- FALSE
-    } else if (nrow(biomarkers$csf) > 0) {
+    } else if (nrow(biomarker_list$csf) > 0) {
       message("I see a csf dataset")
-      df.csf <- biomarkers$csf %>% 
+      df.csf <- biomarker_list$csf %>% 
         dplyr::filter(id==inid) %>%
         rename(age_csf=age) %>%
         mutate(pTau_Abeta42_bin = ifelse(is.na(pTau_Abeta42_bin), NA, pTau_Abeta42_bin))
       csf <- TRUE
-    } else { csf <- FALSE }
-    if (is.null(biomarkers$ptau)) {
+    } else { 
+      csf <- FALSE 
+    }
+    
+    if (is.null(biomarker_list$ptau)) {
       message("No ptau dataset")
       ptau <- FALSE
-    } else if (nrow(biomarkers$ptau) > 0) {
+    } else if (nrow(biomarker_list$ptau) > 0) {
       message("I see a ptau dataset")
-      df.ptau <- biomarkers$ptau %>%
+      
+      if(ownData==T){
+      df.ptau <- biomarker_list$ptau %>%
         mutate(id = gsub("WRAP", "", enumber)) %>%
         dplyr::filter(id==inid) %>%
         mutate(mean_conc=as.numeric(mean_conc),
@@ -117,14 +130,24 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                     mean_conc >= 0.63 ~ 3),
                age_ptau=age_at_appointment) %>%
         select(id, age_ptau, mean_conc, ptau_bin)
+      } else {
+        df.ptau <- biomarker_list$ptau %>%
+          filter(id==inid) %>%
+          select(id, age_ptau=age, mean_conc, ptau_bin)
+      }
+      
       ptau <- TRUE
-    } else { ptau <- FALSE }
-    if (is.null(biomarkers$mk)) {
+    } else { 
+      ptau <- FALSE 
+    }
+    
+  
+    if (is.null(biomarker_list$mk)) {
       message("No mk dataset")
       mk <- FALSE
-    } else if (nrow(biomarkers$mk) > 0) {
+    } else if (nrow(biomarker_list$mk) > 0) {
       message("I see a mk dataset")
-      df.mk <- biomarkers$mk %>% 
+      df.mk <- biomarker_list$mk %>% 
         dplyr::filter(id==inid) %>%
         mutate(mk_bin_combined = dplyr::case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
                                            is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin,
@@ -136,13 +159,18 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
         ) %>%
         select(id, age_mk=age, mk_MTL_bin,mk_vr_bin, mk_bin_total)
       mk <- TRUE
-    } else { mk <- FALSE }
-    if (is.null(biomarkers$amp)) {
+    } else { 
+      mk <- FALSE 
+    }
+    
+    if (is.null(biomarker_list$amp)) {
       message("No amp dataset")
       amp <- FALSE
-    } else if (nrow(biomarkers$amp) > 0) {
+    } else if (nrow(biomarker_list$amp) > 0) {
       message("I see a amp dataset")
-      df.amp <- biomarkers$amp %>%
+      
+      if(ownData==TRUE) {
+        df.amp <- biomarker_list$amp %>%
         mutate(id = gsub("WRAP", "", Name)) %>%
         dplyr::filter(id==inid) %>%
         mutate(amp_bin = dplyr::case_when(Result %in% c("Detected-1") ~ 2,
@@ -151,8 +179,18 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                age=dplyr::case_when(shareable_age_at_appointment == ">90" ~ 90,
                              TRUE ~ as.numeric(shareable_age_at_appointment))) %>%
         select(id, age_amp=age, Result, amp_bin)
+      } else{
+        df.amp <- biomarker_list$amp %>% 
+          filter(id==inid) %>%
+          mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
+                                     Result %in% c("Not Detected") ~ 1,
+                                     Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA)) %>%
+          select(id, age_amp=age, Result, amp_bin)
+      }
       amp <- TRUE
-    } else { amp <- FALSE } 
+    } else { 
+      amp <- FALSE 
+      } 
   }
 
   # Restrict to desired variables
@@ -198,7 +236,7 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                   NA, max(alpha, na.rm=TRUE))) %>%
       ungroup()
     limits  <- merge(limits, alphalim)
-    this.unccoefs <- dplyr::filter(unccoefs.rds,
+    this.unccoefs <- dplyr::filter(unccoefs,
                             name %in% var)
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
@@ -502,43 +540,53 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
     }
     
     
-    if (!is.null(biomarkers)) {
+    if (!is.null(biomarker_list)) {
       
-      if (pib) { df.pib_lim<-  merge(this.df, df.pib %>% rename(age_pib=age), all=T) %>%
+      if (pib) { 
+        df.pib_lim<-  merge(this.df, df.pib %>% rename(age_pib=age), all=T) %>%
         group_by(variable, visno, age_pib) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pib_trunc=1.10, age_pib=-1, variable.f=limits$variable.f[1]) %>%
-        add_row(pib_trunc=1.19, age_pib=-1, variable.f=limits$variable.f[1]) }
+        add_row(pib_trunc=1.19, age_pib=-1, variable.f=limits$variable.f[1]) 
+        }
 
-      if (csf) { df.csf_lim<-  merge(this.df, df.csf, all=T) %>%
+      if (csf) { 
+        df.csf_lim<-  merge(this.df, df.csf, all=T) %>%
         group_by(variable, visno, age_csf) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pTau_Abeta42_bin=0, age_csf=-1, variable.f=limits$variable.f[1]) %>%
-        add_row(pTau_Abeta42_bin=1, age_csf=-1, variable.f=limits$variable.f[1]) }
+        add_row(pTau_Abeta42_bin=1, age_csf=-1, variable.f=limits$variable.f[1]) 
+        }
       
-      if (ptau) { df.ptau_lim<- merge(this.df, df.ptau, all=T) %>% 
+      if (ptau) { 
+        df.ptau_lim<- merge(this.df, df.ptau, all=T) %>% 
         group_by(variable, visno, age_ptau) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(ptau_bin=1, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
         add_row(ptau_bin=2, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
-        add_row(ptau_bin=3, age_ptau=-1, variable.f=limits$variable.f[1]) }
+        add_row(ptau_bin=3, age_ptau=-1, variable.f=limits$variable.f[1])
+      }
       
-      if (mk) { df.mk_lim<-   merge(this.df, df.mk, all=T) %>% 
+      if (mk) { 
+        df.mk_lim<-   merge(this.df, df.mk, all=T) %>% 
         group_by(variable, visno, age_mk) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(mk_bin_total=1, age_mk=-1, variable.f=limits$variable.f[1]) %>%
         add_row(mk_bin_total=2, age_mk=-1, variable.f=limits$variable.f[1]) %>%
-        add_row(mk_bin_total=3, age_mk=-1, variable.f=limits$variable.f[1]) }
+        add_row(mk_bin_total=3, age_mk=-1, variable.f=limits$variable.f[1]) 
+        }
       
-      if (amp) { df.amp_lim<-  merge(this.df, df.amp, all=T) %>% 
+      if (amp) { 
+        df.amp_lim<-  merge(this.df, df.amp, all=T) %>% 
         group_by(variable, visno, age_amp) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(amp_bin=1, age_amp=-1, variable.f=limits$variable.f[1]) %>%
         add_row(amp_bin=2, age_amp=-1, variable.f=limits$variable.f[1]) %>%
-        add_row(amp_bin=NA, age_amp=-1, variable.f=limits$variable.f[1]) }
+        add_row(amp_bin=NA, age_amp=-1, variable.f=limits$variable.f[1]) 
+        }
       
       
       ## Combine plots
       shapes <- c("pTau/AB42" = "square", "pTau217" = "triangle", "MK6240" = "diamond", "aSyn" = "circle cross", "PiB/NAV" = "circle")
       
       if(csf==TRUE) {
+        ## pTau/AB42
         outplot<- outplot+
-          ## pTau/AB42
           guides(colour="none")+
           new_scale("colour")+
           geom_point(data=df.csf_lim, aes(x=age_csf, y=my.ymin + 1.15*(my.ymax-my.ymin), 
@@ -548,7 +596,8 @@ wis_plot <- function(data, var, sub, vislabel=FALSE, biomarkers=NULL, path=NULL,
                                  labels=c("-", "","+"),
                                  name="Biomarker")
       }
-      if(ptau==TRUE) {  ## pTau217
+      if(ptau==TRUE) { 
+        ## pTau217
         outplot<- outplot+
           guides(colour="none")+
           new_scale("colour")+
