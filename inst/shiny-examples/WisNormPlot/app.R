@@ -270,10 +270,21 @@ server <- function(input, output, session) {
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
-    dyn.axis <- TRUE
-    vislabel <- as.logical(max(grepl("2", input$options)))
-    mh <- as.logical(max(grepl("3", input$options)))
-    biomarkers <- as.logical(max(grepl("4", input$options)))
+    
+    #dyn.axis <- TRUE
+    #vislabel <- as.logical(max(grepl("2", input$options)))
+    #mh <- as.logical(max(grepl("3", input$options)))
+    #biomarkers <- as.logical(max(grepl("4", input$options)))
+    if(!is.null(input$options)){
+      vislabel<- as.logical(max(grepl("2", input$options)))
+      mh<- as.logical(max(grepl("3", input$options)))
+      biomarkers<- as.logical(max(grepl("4", input$options)))
+    } else {
+      vislabel<- FALSE
+      mh<- FALSE
+      biomarkers<- FALSE
+    }
+    
     message(paste("mh:",mh,"biomarkers:",biomarkers))
     
     ownData<- ownData()
@@ -293,7 +304,7 @@ server <- function(input, output, session) {
       biomarker_list$mk <- mkInput()
       biomarker_list$amp <- ampInput()
     }    
-    message(paste("Got through the inputs. My biomarker list:", paste(names(biomarker_list), collapse=",")))
+    message(paste("Got through the inputs. My biomarker list:", paste(names(biomarker_list), collapse=", ")))
     
     # varnames <- c("ttotal", "drraw", "lm_imm.xw", "lm_del.xw", "theo.mem.xw.sca",
     #               "bnt.xw", "animtotraw", "cfl.xw",
@@ -331,11 +342,13 @@ server <- function(input, output, session) {
     #                                  levels=varnames,
     #                                  labels=varlabels))
     
-    if (length(biomarker_list)>0) {
-      outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=TRUE, biomarkers=biomarker_list)
-    } else {
-      outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=TRUE)
-    }
+      if (length(biomarker_list)>0) {
+        outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, biomarker_list=biomarker_list, ownData=ownData)
+        } else {
+          outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, ownData=ownData)
+        }
+
+    
     outplot
   })
 
