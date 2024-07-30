@@ -292,11 +292,12 @@ server <- function(input, output, session) {
     var.in <- input$variable
     inid <- input$id
 
-    biomarker_list <- list()
+    mh_list <- list()
     if (mh==TRUE) {
-      biomarker_list$mh <- mhInput()
+      mh_list$mh <- mhInput()
     }
     
+    biomarker_list <- list()
     if (biomarkers==TRUE) {
       biomarker_list$pib <- pibInput()
       biomarker_list$csf <- csfInput()
@@ -343,12 +344,18 @@ server <- function(input, output, session) {
     #                                  labels=varlabels))
     
       if (length(biomarker_list)>0) {
-        outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, biomarker_list=biomarker_list, ownData=ownData)
+        if(length(mh_list)>0) {
+          outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, biomarker_list=biomarker_list, mh_list=mh_list, ownData=ownData)
+        } else {
+          outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, biomarker_list=biomarker_list, ownData=ownData)
+        }
+      } else {
+        if(length(mh_list)>0) {
+          outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, mh_list=mh_list, ownData=ownData)
         } else {
           outplot <- wis_plot(data=data, var=var.in, sub=inid, vislabel=vislabel, ownData=ownData)
         }
-
-    
+      }
     outplot
   })
 
