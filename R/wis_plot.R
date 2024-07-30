@@ -195,6 +195,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
 
   # Restrict to desired variables
   # On full set, set testmin
+  message("Selected variable of interest.")
   this.df <- dplyr::filter(df,
                     variable %in% var) %>%
     group_by(id) %>% arrange(visno, .by_group=T) %>%
@@ -223,6 +224,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
             axis.title=element_blank(),
             panel.background=element_rect(colour="white",fill="white"))
   } else {
+    message("Beginning plot")
     nobs    <- group_by(this.df, variable) %>%
       summarize(nobs=n(),
                 singleobs = (nobs==1)) %>%
@@ -236,8 +238,10 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
                                   NA, max(alpha, na.rm=TRUE))) %>%
       ungroup()
     limits  <- merge(limits, alphalim)
-    this.unccoefs <- dplyr::filter(unccoefs,
+    message("unccoefs.rds loading.")
+    this.unccoefs <- dplyr::filter(unccoefs.rds,
                             name %in% var)
+    message("Success.")
     nlines.df<-group_by(this.unccoefs, name) %>%
       select(name, nlines) %>%
       rename(variable=name) %>%
@@ -385,6 +389,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
     }
     
     ## Start plot creation
+    message("Start Plot creation.")
     outplot  <- ggplot(this.df, aes(x=age)) +
       scale_x_continuous(limits=c(35,90))
     
@@ -539,7 +544,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
       
     }
     
-    
+    message("Looking for biomarkers.")
     if (!is.null(biomarker_list)) {
       
       if (pib) { 
@@ -745,6 +750,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
         }
       }
     }
+    message("Biomarkers complete.")
     
     if (int.miss==FALSE) {
       outplot<- outplot +
@@ -758,6 +764,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
     
     # Below: dummy data to set y limits
     # Need to add ghost rows to show both High and Low arrows in legend:
+    message("Ghost rows for arrow legend.")
     if(all(is.na(this.df$sign)) |
        all(this.df$sign=="High" | is.na(this.df$sign)) |
        all(this.df$sign=="Low" | is.na(this.df$sign)) ) {
@@ -923,6 +930,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, ownData
                             guide=guide_legend(order=99, override.aes = list(alpha=1)))+
       labs(linetype=NULL)
   }
+  message("Returning plot.")
   if (!is.null(path)) { 
     plotname <- paste(paste("wisplot", sub, var.in, sep="_"), "png", sep=".")
     ggsave(plotname, outplot, path=path, width=width, height=height, units="in")
