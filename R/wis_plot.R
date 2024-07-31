@@ -83,7 +83,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       pib <- FALSE
     } else if (nrow(biomarker_list$pib) > 0) {
       message("I see a pib dataset")
-      df.pib <- biomarker_list$pib %>% dplyr::filter(id==inid)
+      df.pib <- biomarker_list$pib %>% 
+                dplyr::filter(id==inid)
       pib <- TRUE
     } else { 
       pib <- FALSE 
@@ -109,22 +110,9 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     } else if (nrow(biomarker_list$ptau) > 0) {
       message("I see a ptau dataset")
       
-      if(ownData==T){
       df.ptau <- biomarker_list$ptau %>%
-        mutate(id = gsub("WRAP", "", enumber)) %>%
-        dplyr::filter(id==inid) %>%
-        mutate(mean_conc=as.numeric(mean_conc),
-               ptau_bin = dplyr::case_when(mean_conc<=0.4 ~ 1,
-                                    mean_conc>0.4 & mean_conc<0.63 ~ 2,
-                                    mean_conc >= 0.63 ~ 3),
-               age_ptau=age_at_appointment) %>%
-        select(id, age_ptau, mean_conc, ptau_bin)
-      } else {
-        df.ptau <- biomarker_list$ptau %>%
           filter(id==inid) %>%
-          select(id, age_ptau=age, mean_conc, ptau_bin)
-      }
-      
+          rename(age_ptau=age)
       ptau <- TRUE
     } else { 
       ptau <- FALSE 
@@ -136,17 +124,16 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       mk <- FALSE
     } else if (nrow(biomarker_list$mk) > 0) {
       message("I see a mk dataset")
-      df.mk <- biomarker_list$mk %>% 
-        dplyr::filter(id==inid) %>%
-        mutate(mk_bin_combined = dplyr::case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
-                                           is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin,
-        ),
-        mk_bin_total = dplyr::case_when(is.na(mk_bin_combined) ~ NA,
-                                 mk_bin_combined %in% c("SUVR MTL-", "T-") ~ 1,
-                                 mk_bin_combined %in% c("T+/MTL only") ~ 2,
-                                 mk_bin_combined %in% c("SUVR MTL+", "T+/MTL & Neo") ~ 3)
-        ) %>%
-        select(id, age_mk=age, mk_MTL_bin,mk_vr_bin, mk_bin_total)
+      
+        df.mk <- biomarker_list$mk %>% 
+          dplyr::filter(id==inid) %>%
+          mutate(mk_bin_combined = dplyr::case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
+                                                    is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin,),
+                 mk_bin_total = dplyr::case_when(is.na(mk_bin_combined) ~ NA,
+                                                 mk_bin_combined %in% c("SUVR MTL-", "T-") ~ 1,
+                                                 mk_bin_combined %in% c("T+/MTL only") ~ 2,
+                                                 mk_bin_combined %in% c("SUVR MTL+", "T+/MTL & Neo") ~ 3)) %>%
+          rename(age_mk=age)
       mk <- TRUE
     } else { 
       mk <- FALSE 
@@ -160,21 +147,15 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       
       if(ownData==TRUE) {
         df.amp <- biomarker_list$amp %>%
-        mutate(id = gsub("WRAP", "", Name)) %>%
         dplyr::filter(id==inid) %>%
-        mutate(amp_bin = dplyr::case_when(Result %in% c("Detected-1") ~ 2,
-                                   Result %in% c("Not Detected") ~ 1,
-                                   Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
-               age=dplyr::case_when(shareable_age_at_appointment == ">90" ~ 90,
-                             TRUE ~ as.numeric(shareable_age_at_appointment))) %>%
-        select(id, age_amp=age, Result, amp_bin)
+        rename(age_amp=age)
       } else{
         df.amp <- biomarker_list$amp %>% 
-          filter(id==inid) %>%
+          dplyr::filter(id==inid) %>%
           mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                      Result %in% c("Not Detected") ~ 1,
                                      Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA)) %>%
-          select(id, age_amp=age, Result, amp_bin)
+          rename(age_amp=age)
       }
       amp <- TRUE
     } else { 

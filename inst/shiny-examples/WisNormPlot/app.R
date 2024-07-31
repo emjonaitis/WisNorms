@@ -32,7 +32,7 @@ ui <- fluidPage(
   sidebarLayout(
 
     # Sidebar panel for inputs ----
-    sidebarPanel(width=3,fluid=T, 
+    sidebarPanel(width=3, fluid=T, 
 
       checkboxInput("ownData",
                     "Import my own data file",
@@ -47,37 +47,13 @@ ui <- fluidPage(
                              "text/comma-separated-values,text/plain",
                              ".csv")),
 
-        fileInput("file2", "Choose PiB CSV file",
-                  multiple = FALSE,
-                  accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
-                             ".csv")),
-
-        fileInput("file3", "Choose CSF CSV file",
+        fileInput("file2", "Choose Biomarkers CSV file",
                   multiple = FALSE,
                   accept = c("text/csv",
                              "text/comma-separated-values,text/plain",
                              ".csv")),
         
-        fileInput("file4", "Choose pTau217 CSV file",
-                  multiple = FALSE,
-                  accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
-                             ".csv")),
-        
-        fileInput("file5", "Choose MK6240 CSV file",
-                  multiple = FALSE,
-                  accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
-                             ".csv")),
-      
-        fileInput("file6", "Choose aSyn CSV file",
-                  multiple = FALSE,
-                  accept = c("text/csv",
-                             "text/comma-separated-values,text/plain",
-                             ".csv")),
-        
-        fileInput("file7", "Choose medical history CSV file",
+        fileInput("file3", "Choose Medical History CSV file",
                   multiple = FALSE,
                   accept = c("text/csv",
                              "text/comma-separated-values,text/plain",
@@ -207,62 +183,43 @@ server <- function(input, output, session) {
       paste0(TRUE)
     }
   })
-
+  
   pibInput <- reactive({
-    if (input$ownData==FALSE) {
-      sample_pib
-    } else {
-      req(input$file2)
-      read.csv(input$file2$datapath, stringsAsFactors=FALSE)
-    }
-  })
-
+    if(input$ownData==FALSE){
+      sample_pib}
+    })
   csfInput <- reactive({
-    if (input$ownData==FALSE) {
-      sample_csf
-    } else {
-      req(input$file3)
-      read.csv(input$file3$datapath, stringsAsFactors=FALSE)
-    }
+    if(input$ownData==FALSE){
+      sample_csf}
   })
-  
   ptauInput <- reactive({
-    if (input$ownData==FALSE) {
-      sample_ptau
-    } else {
-      req(input$file4)
-      read.csv(input$file4$datapath, stringsAsFactors=FALSE)
-    }
+    if(input$ownData==FALSE){
+      sample_ptau}
   })
-  
   mkInput <- reactive({
-    if (input$ownData==FALSE) {
-      sample_mk
-    } else {
-      req(input$file5)
-      read.csv(input$file5$datapath, stringsAsFactors=FALSE)
-    }
+    if(input$ownData==FALSE){
+      sample_mk}
   })
-  
   ampInput <- reactive({
-    if (input$ownData==FALSE) {
-      sample_amp
-    } else {
-      req(input$file6)
-      read.csv(input$file6$datapath, stringsAsFactors=FALSE)
-    }
+    if(input$ownData==FALSE){
+      sample_amp}
   })
+  biomarkerInput<- reactive({
+    if(input$ownData==TRUE){
+      req(input$file2)
+      read.csv(input$file2$datapath, stringsAsFactors=FALSE)}
+    })
 
   mhInput <- reactive({
     if (input$ownData==FALSE) {
       sample_mh
     } else {
-      req(input$file7)
-      read.csv(input$file7$datapath, stringsAsFactors=FALSE)
+      req(input$file3)
+      read.csv(input$file3$datapath, stringsAsFactors=FALSE)
     }
   })
 
-  output$rrqPlot <- renderPlot(height=900,{
+  output$rrqPlot <- renderPlot(height=800,{
     
     req(input$id, input$variable)
     message("~~~~~~~~~~~~~~~~~~~~~BEGIN PLOT~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
@@ -270,11 +227,6 @@ server <- function(input, output, session) {
     # input$file1 will be NULL initially. After the user selects
     # and uploads a file, head of that data file by default,
     # or all rows if selected, will be shown.
-    
-    #dyn.axis <- TRUE
-    #vislabel <- as.logical(max(grepl("2", input$options)))
-    #mh <- as.logical(max(grepl("3", input$options)))
-    #biomarkers <- as.logical(max(grepl("4", input$options)))
     if(!is.null(input$options)){
       vislabel<- as.logical(max(grepl("2", input$options)))
       mh<- as.logical(max(grepl("3", input$options)))
@@ -298,50 +250,21 @@ server <- function(input, output, session) {
     }
     
     biomarker_list <- list()
-    if (biomarkers==TRUE) {
+    if (biomarkers==TRUE & ownData==FALSE) {
       biomarker_list$pib <- pibInput()
       biomarker_list$csf <- csfInput()
       biomarker_list$ptau <- ptauInput()
       biomarker_list$mk <- mkInput()
       biomarker_list$amp <- ampInput()
-    }    
-    message(paste("Got through the inputs. My biomarker list:", paste(names(biomarker_list), collapse=", ")))
+    } else if (biomarkers==TRUE & ownData==TRUE){
+      biomarker_list$pib<- biomarkerInput() %>% filter(biomarker=="PiB/NAV")
+      biomarker_list$csf <- biomarkerInput() %>% filter(biomarker=="pTau/AB42")
+      biomarker_list$ptau <- biomarkerInput() %>% filter(biomarker=="pTau217")
+      biomarker_list$mk <- biomarkerInput() %>% filter(biomarker=="MK6240")
+      biomarker_list$amp <- biomarkerInput() %>% filter(biomarker=="aSyn")
+    }
     
-    # varnames <- c("ttotal", "drraw", "lm_imm.xw", "lm_del.xw", "theo.mem.xw.sca",
-    #               "bnt.xw", "animtotraw", "cfl.xw",
-    #               "trla", "trlb.xw", "waisrtot",
-    #               "pacc3.cfl.xw.sca", "pacc3.an.xw.sca", "pacc3.wrap.sca", "pacc4.wrap.sca", "pacc5.wrap.sca")
-    # varlabels <- c("AVLT Learning", "AVLT Delayed", "Logical Memory IA (XW)",
-    #                "Logical Memory IIA (XW)", "Memory Composite (XW)",
-    #                "Boston Naming (XW)", "Animal Naming", "Letter Fluency (CFL) (XW)",
-    #                "TMT-A", "TMT-B", "Digit Symbol",
-    #                "PACC3-CFL", "PACC3-AN", "PACC3-DS", "PACC4-DS", "PACC5-DS")
-    # testmax.vec <- c(75, 15, 25, 25, 200, 60, 100, 250, 150, 400, 100, 200, 200, 200, 200, 200)
-    # names(testmax.vec) <- varnames
-
-    # var.in <- input$variable
-    # if (var.in=="memory"){
-    #     var <- c("ttotal", "lm_imm.xw", "lm_del.xw", "theo.mem.xw.sca", "drraw")
-    #   } else if (var.in=="execfn") {
-    #     var <- c("waisrtot", "trla", "trlb.xw")
-    #   } else if (var.in=="language") {
-    #     var <- c("animtotraw","cfl.xw")
-    #   } else if (var.in=="global") {
-    #     var <- c("pacc3.cfl.xw.sca", "pacc3.an.xw.sca", "pacc3.wrap.sca", "pacc4.wrap.sca", "pacc5.wrap.sca")
-    #   } else {
-    #     var <- var.in
-    #   }
-    # 
-    # v   <- length(var)
-    # 
-    # message(paste("Made it past initial import; I see", v, "variables."))
-
-    # inid  <- str_pad(input$id, 4, side="left", pad="0")
- 
-    # df <- dataInput() %>%
-    #       mutate(variable.f = factor(variable,
-    #                                  levels=varnames,
-    #                                  labels=varlabels))
+    message(paste("Got through the inputs. My biomarker list:", paste(names(biomarker_list), collapse=", ")))
     
       if (length(biomarker_list)>0) {
         if(length(mh_list)>0) {
@@ -420,55 +343,48 @@ server <- function(input, output, session) {
     ownData<- ownData()
     
     if(biomarkers==TRUE){
-      df.amp<-  ampInput()
-      df.mk<-   mkInput()
-      df.ptau<- ptauInput()
-      df.csf<-  csfInput()
-      df.pib<-  pibInput()
+      if (ownData==FALSE) {
+        df.pib <- pibInput()
+        df.csf <- csfInput()
+        df.ptau <- ptauInput()
+        df.mk <- mkInput()
+        df.amp <- ampInput()
+      } else if (ownData==TRUE){
+        df.pib<- biomarkerInput() %>% filter(biomarker=="PiB/NAV")
+        df.csf <- biomarkerInput() %>% filter(biomarker=="pTau/AB42")
+        df.ptau <- biomarkerInput() %>% filter(biomarker=="pTau217")
+        df.mk <- biomarkerInput() %>% filter(biomarker=="MK6240")
+        df.amp <- biomarkerInput() %>% filter(biomarker=="aSyn")
+      }
       
-      df.pib <- filter(df.pib,id==inid) %>%
+      df.pib <- df.pib %>%
+                filter(id==inid) %>%
                 mutate(pib_index = round(pib_index, 3),
                        pib_trunc = round(pib_trunc, 3))
   
-      df.csf <- filter(df.csf, id==inid) %>%
-                rename(age_csf=age) %>%
-                mutate(pTau_Abeta42_bin = ifelse(is.na(pTau_Abeta42_bin), NA, pTau_Abeta42_bin))
+      df.csf <- df.csf %>%
+                filter(id==inid) %>%
+                mutate(pTau_Abeta42_bin = ifelse(is.na(pTau_Abeta42_bin), NA, pTau_Abeta42_bin)) %>%
+                select(id, age_csf=age, pTau_Abeta42_bin)
       
-      if (ownData==TRUE){
-        df.ptau<- df.ptau %>%
-                  mutate(id = gsub("WRAP", "", enumber)) %>%
-                  filter(id==inid) %>%
-                  mutate(mean_conc=as.numeric(mean_conc),
-                         ptau_bin = case_when(mean_conc<=0.4 ~ 1,
-                                              mean_conc>0.4 & mean_conc<0.63 ~ 2,
-                                              mean_conc >= 0.63 ~ 3),
-                         mean_conc = round(as.numeric(mean_conc), 3))%>%
-                  select(id, age_ptau=age_at_appointment, mean_conc, ptau_bin)
-      } else {
-        df.ptau<- df.ptau %>%
-                  filter(id==inid) %>%
-                  mutate(mean_conc = round(as.numeric(mean_conc), 3)) %>%
-                  select(id, age_ptau=age, mean_conc, ptau_bin)
-      }
+      df.ptau<- df.ptau %>%
+                filter(id==inid) %>%
+                mutate(mean_conc = round(as.numeric(mean_conc), 3)) %>%
+                select(id, age_ptau=age, mean_conc, ptau_bin)
       
-      df.mk <- filter(df.mk, id==inid) %>%
+      df.mk <- df.mk %>%
+               filter(id==inid) %>%
                mutate(mk_bin_combined = case_when(!is.na(mk_vr_bin) ~ mk_vr_bin,
                                                   is.na(mk_vr_bin) & !is.na(mk_MTL_bin) ~ mk_MTL_bin),
                       mk_bin_total = case_when(is.na(mk_bin_combined) ~ NA,
                                                mk_bin_combined %in% c("SUVR MTL-", "T-") ~ 1,
                                                mk_bin_combined %in% c("T+/MTL only") ~ 2,
                                                mk_bin_combined %in% c("SUVR MTL+", "T+/MTL & Neo") ~ 3)) %>%
-               select(id, age_mk=age, mk_MTL_bin,mk_vr_bin, mk_bin_total)
+               select(id, age_mk=age, mk_MTL_bin, mk_vr_bin, mk_bin_total)
       
       if(ownData==TRUE){
         df.amp<-  df.amp %>%
-                  mutate(id = gsub("WRAP", "", Name)) %>%
                   filter(id==inid) %>%
-                  mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
-                                             Result %in% c("Not Detected") ~ 1,
-                                             Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA),
-                         age=case_when(shareable_age_at_appointment == ">90" ~ 90,
-                                       TRUE ~ as.numeric(shareable_age_at_appointment)))%>%
                   select(id, age_amp=age, Result, amp_bin)
       }else{
         df.amp<-  df.amp %>% 
