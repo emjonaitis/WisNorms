@@ -8,32 +8,38 @@ wis_plot(
   data,
   var,
   sub,
-  vislabel = FALSE,
-  biomarkers = NULL,
+  vislabel = TRUE,
+  biomarker_list = NULL,
+  mh_list = NULL,
+  ownData = TRUE,
   path = NULL,
-  width = 15,
-  height = 10
+  width = 18,
+  height = 12
 )
 }
 \arguments{
 \item{data}{Vector containing the output of a wis_est call.}
 
-\item{var}{Names of the original variables. Should be among the following: anartraw, ANIMALS, AnimTotRaw, bnttot, bnttot30, BOSTON, CRAFTDRE, CRAFTURS, drraw, flucfl, LOGIMEM, MEMUNITS, MINTTOTS, ORRT.Unc_Std, readstn, TRAILA, TRAILB, trla, trlb, tTotal, ttotal, UDSVERTN, waisrtot, wmsrar, wmsrar2}
+\item{var}{Names of the original variables. Should be among the following: memory, execfn, language, global, animtotraw ttotal, drraw, cfl.xw, waisrtot, lm_imm.xw, lm_del.xw, theo.mem.xw.sca, pacc3.an.xw.sca , pacc3.wrap.sca, pacc4.wrap.sca, pacc5.wrap.sca, trla, trlb.xw}
 
-\item{sub}{Column containing subject ID. Defaults to Reggieid.}
+\item{sub}{Subject identifier for person of interest. Should match a row or rows in data$id.}
 
-\item{vislabel}{Column containing data source. Defaults to Data.Source.}
+\item{vislabel}{Logical indicating if visit labels should be displayed on plot.}
 
-\item{biomarkers}{Column containing visit number. Defaults to Visit_Number.}
+\item{biomarker_list}{Named list of biomarker data sets with components pib, mk, csf, ptau, and amp corresponding to PiB/NAV, MK6240, CSF pTau/AB42, plasma pTau217, and CSF aSyn, respectively. If a data frame is given instead, it will be transformed into a list of dataframes with the same named components.}
+
+\item{mh_list}{List of medical history data sets.}
+
+\item{ownData}{Logical indicating if using your own data or simulated data.}
 
 \item{path}{File path in which to store output plot. The plot filename will be created based on the sub and var parameters.}
 
-\item{width}{Width of output png file.}
+\item{width}{Width of output png file in inches.}
 
-\item{height}{Height of output png file.}
+\item{height}{Height of output png file in inches.}
 }
 \value{
-Plot containing indidvidual longitudinal trajectories for selected WisNorms variables.
+Plot containing individual longitudinal trajectories for selected WisNorms variables.
 }
 \description{
 This function takes in an output dataset matching the output of wis_est, and a variable or variable list and
