@@ -98,7 +98,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       ptau.df <- filter(biomarker_list, biomarker=="pTau217")
       amp.df <- filter(biomarker_list, biomarker=="aSyn")
       biomarker_list = list(pib=pib.df, mk=mk.df, csf=csf.df, ptau=ptau.df, amp=amp.df)
-      message("Reformatted as list")
+      message("Reformatted biomarker dataset as list")
     }
     
     if (is.null(biomarker_list$pib)) {
@@ -193,6 +193,12 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     message("Medical history: No data")
     mh<- FALSE
   } else{
+    
+    if(is.data.frame(mh_list)) {
+      mh_list = list(mh=mh_list)
+      message("Reformatted medical history dataset as list")
+    }
+    
         
     if (is.null(mh_list$mh)) {
       message("No mh dataset")
