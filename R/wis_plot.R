@@ -29,7 +29,7 @@
 
 wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list=NULL, ownData=TRUE, path=NULL, width=18, height=12) {
 
-  message("Entering my wis_plot function.")
+  message(paste0("Beginning plot for subject ", sub, ", variable", var, "."))
   meanage  <- 58.9
   
   varnames <- c("ttotal", "drraw", "lm_imm.xw", "lm_del.xw", "theo.mem.xw.sca",
@@ -82,7 +82,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
 
   # Pulling biomarker datasets out of input list and filtering to id=inid
   if (is.null(biomarker_list)) {
-    message("No biomarker list input.")
+    message("No biomarker data provided")
     pib <- FALSE
     csf <- FALSE
     ptau <- FALSE
@@ -98,24 +98,23 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       ptau.df <- filter(biomarker_list, biomarker=="pTau217")
       amp.df <- filter(biomarker_list, biomarker=="aSyn")
       biomarker_list = list(pib=pib.df, mk=mk.df, csf=csf.df, ptau=ptau.df, amp=amp.df)
-      message("Reformatted biomarker dataset as list")
     }
     
     if (is.null(biomarker_list$pib)) {
-      message("PiB: No data")
+      message("PiB/NAV: No data provided")
       pib <- FALSE
     } else if (nrow(biomarker_list$pib) > 0) {
       df.pib <- biomarker_list$pib %>% 
                 dplyr::filter(id==inid)
       n.pib <- nrow(df.pib)
-      message(paste("PiB:", n.pib, "observations"))
+      message(paste("PiB/NAV:", n.pib, "observations"))
       pib <- ifelse(n.pib>0, TRUE, FALSE)
     } else { 
       pib <- FALSE 
     }
     
     if (is.null(biomarker_list$csf)) {
-      message("CSF: No data")
+      message("CSF pTau/AB42: No data provided")
       csf <- FALSE
     } else if (nrow(biomarker_list$csf) > 0) {
       df.csf <- biomarker_list$csf %>% 
@@ -123,14 +122,14 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         rename(age_csf=age) %>%
         mutate(pTau_Abeta42_bin = ifelse(is.na(pTau_Abeta42_bin), NA, pTau_Abeta42_bin))
       n.csf <- nrow(df.csf)
-      message(paste("CSF:", n.csf, "observations"))
+      message(paste("CSF pTau/AB42:", n.csf, "observations"))
       csf <- ifelse(n.csf>0, TRUE, FALSE)
     } else { 
       csf <- FALSE 
     }
     
     if (is.null(biomarker_list$ptau)) {
-      message("Plasma pTau217: No data")
+      message("Plasma pTau217: No data provided")
       ptau <- FALSE
     } else if (nrow(biomarker_list$ptau) > 0) {
       df.ptau <- biomarker_list$ptau %>%
@@ -145,7 +144,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
   
     if (is.null(biomarker_list$mk)) {
-      message("MK6240: No data")
+      message("MK6240: No data provided")
       mk <- FALSE
     } else if (nrow(biomarker_list$mk) > 0) {
         df.mk <- biomarker_list$mk %>% 
@@ -165,7 +164,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     }
     
     if (is.null(biomarker_list$amp)) {
-      message("aSyn: No data")
+      message("aSyn: No data provided")
       amp <- FALSE
     } else if (nrow(biomarker_list$amp) > 0) {
       if(ownData==TRUE) {
@@ -190,18 +189,16 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
   }
 
   if(is.null(mh_list)){
-    message("Medical history: No data")
+    message("Medical history: No data provided")
     mh<- FALSE
   } else{
     
     if(is.data.frame(mh_list)) {
       mh_list = list(mh=mh_list)
-      message("Reformatted medical history dataset as list")
     }
     
         
     if (is.null(mh_list$mh)) {
-      message("No mh dataset")
       mh <- FALSE
     } else if (nrow(mh_list$mh) > 0) {
       df.mh <- mh_list$mh %>% dplyr::filter(id==inid)
@@ -860,13 +857,10 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
     if (mh==TRUE) {
       df.mh      <- dplyr::filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
-      message(paste("Number of mh rows:", nrow(df.mh)))
       if (nrow(df.mh)==0) {
-        message("I'm in the zero place")
         mh <- FALSE
       } else {
         # Plot only events in the age range
-        message("I'm in the one+ place")
         df.mh.sum  <- arrange(df.mh, age) %>%
           mutate(event = ifelse(is.na(event), "Unknown event", event),
                  event.f = factor(event,
@@ -901,7 +895,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                  age_xnudge = age + label_xnudge)
         letterlabels <- as.numeric(sapply(unique(df.mh.sum$groups), utf8ToInt))
         letterlabels2<- unique(df.mh.sum$groups)
-        message(paste("After data management", nrow(df.mh),"rows in df.mh and", nrow(df.mh.sum),"rows in df.mh.sum"))
         
         outplot <- outplot + 
           geom_vline(data=df.mh,
@@ -930,9 +923,12 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                             guide=guide_legend(order=99, override.aes = list(alpha=1)))+
       labs(linetype=NULL)
   }
-  message("Returning plot.")
   if (!is.null(path)) { 
     plotname <- paste(paste("wisplot", sub, var.in, sep="_"), "png", sep=".")
+    message(paste0("Returning plot to file: ", path, plotname, "."))
     ggsave(plotname, outplot, path=path, width=width, height=height, units="in")
-  } else { outplot }
+  } else { 
+    message(paste0("Returning plot for subject ", sub, ", variable", var, "to local environment."))
+    outplot 
+  }
 }
