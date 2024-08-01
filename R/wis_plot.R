@@ -23,6 +23,7 @@
 #' @import ggplot2
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom ggnewscale new_scale
+#' @importFrom ggpattern geom_rect_pattern scale_pattern_fill_manual
 #' @seealso \code{\link{wis_est}}
 #' @export
 
