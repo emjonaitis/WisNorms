@@ -928,7 +928,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     message(paste0("Returning plot to file: ", path, plotname, "."))
     ggsave(plotname, outplot, path=path, width=width, height=height, units="in")
   } else { 
-    message(paste0("Returning plot for subject ", sub, ", variable", var, "to local environment."))
+    message(paste0("Returning plot for subject ", sub, ", variable", var.in, "to local environment."))
     outplot 
   }
 }
