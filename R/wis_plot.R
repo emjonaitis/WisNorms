@@ -29,7 +29,7 @@
 
 wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list=NULL, ownData=TRUE, path=NULL, width=18, height=12) {
 
-  message(paste0("Beginning plot for subject ", sub, ", variable", var, "."))
+  message(paste0("Beginning plot for subject ", sub, ", variable ", var, "."))
   meanage  <- 58.9
   
   varnames <- c("ttotal", "drraw", "lm_imm.xw", "lm_del.xw", "theo.mem.xw.sca",
@@ -560,50 +560,41 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
     if (!is.null(biomarker_list)) {
       
-      if (pib) { 
+      ## Adding ghost rows for legend creation when pib, csf, ptau, mk, amp == FALSE
         df.pib_lim<-  merge(this.df, df.pib %>% rename(age_pib=age), all=T) %>%
         group_by(variable, visno, age_pib) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pib_trunc=1.10, age_pib=-1, variable.f=limits$variable.f[1]) %>%
         add_row(pib_trunc=1.19, age_pib=-1, variable.f=limits$variable.f[1]) 
-        }
-
-      if (csf) { 
+ 
         df.csf_lim<-  merge(this.df, df.csf, all=T) %>%
         group_by(variable, visno, age_csf) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(pTau_Abeta42_bin=0, age_csf=-1, variable.f=limits$variable.f[1]) %>%
         add_row(pTau_Abeta42_bin=1, age_csf=-1, variable.f=limits$variable.f[1]) 
-        }
-      
-      if (ptau) { 
+
         df.ptau_lim<- merge(this.df, df.ptau, all=T) %>% 
         group_by(variable, visno, age_ptau) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(ptau_bin=1, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
         add_row(ptau_bin=2, age_ptau=-1, variable.f=limits$variable.f[1]) %>%
         add_row(ptau_bin=3, age_ptau=-1, variable.f=limits$variable.f[1])
-      }
-      
-      if (mk) { 
+
         df.mk_lim<-   merge(this.df, df.mk, all=T) %>% 
         group_by(variable, visno, age_mk) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(mk_bin_total=1, age_mk=-1, variable.f=limits$variable.f[1]) %>%
         add_row(mk_bin_total=2, age_mk=-1, variable.f=limits$variable.f[1]) %>%
         add_row(mk_bin_total=3, age_mk=-1, variable.f=limits$variable.f[1]) 
-        }
-      
-      if (amp) { 
+
         df.amp_lim<-  merge(this.df, df.amp, all=T) %>% 
         group_by(variable, visno, age_amp) %>% dplyr::slice(1) %>% ungroup() %>%
         add_row(amp_bin=1, age_amp=-1, variable.f=limits$variable.f[1]) %>%
         add_row(amp_bin=2, age_amp=-1, variable.f=limits$variable.f[1]) %>%
         add_row(amp_bin=NA, age_amp=-1, variable.f=limits$variable.f[1]) 
-        }
+
       
       
       ## Combine plots
       shapes <- c("pTau/AB42" = "square", "pTau217" = "triangle", "MK6240" = "diamond", "aSyn" = "circle cross", "PiB/NAV" = "circle")
-      
-      if(csf==TRUE) {
-        ## pTau/AB42
+    
+      ## pTau/AB42
         outplot<- outplot+
           guides(colour="none")+
           new_scale("colour")+
@@ -612,11 +603,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=0.5, na.value="black",
                                  breaks=c(0, 0.5, 1),
                                  labels=c("-", "","+"),
-                                 name="Biomarker")
-      }
-      if(ptau==TRUE) { 
+                                 name="Biomarker") +
         ## pTau217
-        outplot<- outplot+
           guides(colour="none")+
           new_scale("colour")+
           geom_point(data=df.ptau_lim, aes(x=age_ptau, y=my.ymin + 1.25*(my.ymax-my.ymin), 
@@ -624,11 +612,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=2, na.value="black",
                                  breaks=c(1,2,3),
                                  labels=c("-", "","+"),
-                                 name="Biomarker")
-      }
-      if (mk==TRUE) {
+                                 name="Biomarker") +
         ## MK6240
-        outplot<- outplot+
           guides(colour="none")+
           new_scale("colour")+
           geom_point(data=df.mk_lim, aes(x=age_mk, y= my.ymin + 1.35*(my.ymax-my.ymin), 
@@ -636,11 +621,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=2, na.value="black",
                                  breaks=c(1, 2, 3),
                                  labels=c("-","","+"),
-                                 name="Biomarker")
-      }
-      if (amp==TRUE) {
+                                 name="Biomarker") +
         ## Amprion
-        outplot<- outplot+
           guides(colour="none")+
           new_scale("colour")+
           geom_point(data=df.amp_lim, aes(x=age_amp, y= my.ymin + 1.45*(my.ymax-my.ymin), 
@@ -648,19 +630,28 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=1.5, na.value="black",
                                  breaks=c(1,1.5,2),
                                  labels=c("-", "","+"),
-                                 name="Biomarker")
-      }
-      outplot <- outplot + scale_shape_manual(values = shapes, 
-                                              breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                                              guide=guide_legend(order=3)) +
-        labs(shape=NULL)
+                                 name="Biomarker") +
+          scale_shape_manual(values = shapes, 
+                             breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
+                             guide=guide_legend(order=3)) +
+          guides(colour="none")
       
       ## PiB
       if (pib==FALSE) {
-        outplot<- outplot
-      } else {
-        outplot<- outplot + guides(colour="none")
+        ## For legend creation with ghost rows
+        outplot<- outplot +
+          new_scale("colour")+
+          geom_point(data=df.pib_lim, aes(x=age_pib, y=my.ymin + 1.05*(my.ymax-my.ymin), 
+                                          colour=pib_trunc, shape="PiB/NAV"),  size=4)+
+          scale_colour_gradient2(low="blue", mid="yellow", high="red", midpoint=1.15, na.value="black",
+                                 breaks=c(1.10, 1.15, 1.19),
+                                 labels=c("-", "", "+"),
+                                 name="Biomarker")+
+          scale_shape_manual(values = shapes, 
+                             breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
+                             guide=guide_legend(order=3))
         
+      } else {
         limits<-  df.pib %>% arrange(age) %>%
           dplyr::slice(n()) %>%
           mutate(my.pibmin=pmin(eaoa_1p19_gbtm, eaoa_1p19_sila, na.rm=TRUE),
@@ -684,8 +675,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                    name="Biomarker")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                               guide=guide_legend(order=3))+
-            labs(shape=NULL)
+                               guide=guide_legend(order=3))
           
           
         } else if (limits$my.pibrange[1] > 1) {
@@ -719,18 +709,17 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                                          override.aes=list(pattern_colour="red", #fill="white", 
                                                                            pattern_alpha=1, pattern_size=0.2,
                                                                            pattern_spacing=0.01, pattern_density=0.3))) +
-            labs(pattern_fill=NULL, shape=NULL)+
+            ## using blank space for shape label due to bug in ggnewscale version 0.5.0
+            labs(pattern_fill=" ")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
                                guide=guide_legend(order=3))
           
         }else {
-          
           outplot <- outplot +
             new_scale("colour")+
             geom_vline(aes(xintercept=limits$my.pibmean[1], colour="Amyloid EAOA"), linetype="twodash", linewidth=1.25)+
             scale_color_manual(values="red", guide=guide_legend(order=1))+
-            labs(colour=NULL)+
             new_scale("colour")+
             geom_point(data=df.pib_lim, aes(x=age_pib, y=my.ymin + 1.05*(my.ymax-my.ymin), 
                                             colour=pib_trunc, shape="PiB/NAV"),  size=4)+
@@ -740,8 +729,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                    name="Biomarker")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                               guide=guide_legend(order=3))+
-            labs(shape=NULL)
+                               guide=guide_legend(order=3))
         }
       }
     }
@@ -753,7 +741,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                   colour="grey40", linetype="dashed") +
         geom_text(aes(x=x, y=y, label=lab),
                   data=myfun.labs, colour="grey40", hjust=0,
-                  check_overlap=TRUE, size=2.5)
+                  check_overlap=TRUE, size=2.5) 
     }
     
     # Below: dummy data to set y limits
@@ -768,6 +756,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         add_row(sign="Low", variable.f=this.df$variable.f[1]) 
       
       outplot <-  outplot +
+        ## using blank space for shape label due to bug in ggnewscale version 0.5.0
+        labs(shape=" ")+
         new_scale("shape")+
         geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
         geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
@@ -781,35 +771,24 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       
       if(any(this.df$singleobs)==TRUE){
         
+        outplot <-  outplot +
+          geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
+                     aes(y=value),
+                     shape=4, size=4, stroke=2, show.legend=F) +
+          labs(x="Age",
+               y="Outcome value",
+               shape="Conditional performance") +
+          theme_bw() +
+          theme(legend.position="bottom", legend.direction = "horizontal",
+                legend.box="vertical")
+        
         ## Adding for those that have single observations and no percentiles
         if(any(this.df2$no_percentile) %in% c(TRUE)){
           outplot <-  outplot +
-            geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
-                       aes(y=value),
-                       shape=4, size=4, stroke=2, show.legend=F) +
             geom_point(data=dplyr::filter(this.df2, no_percentile==TRUE & !singleobs %in% c(TRUE)),
                        aes(y=value),
-                       shape=4, size=4, stroke=2, show.legend=F) +
-            labs(x="Age",
-                 y="Outcome value",
-                 shape="Conditional performance",
-                 pattern_fill="") +
-            theme_bw() +
-            theme(legend.position="bottom", legend.direction = "horizontal",
-                  legend.box="vertical")
-        } else{
-          outplot <-  outplot +
-            geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
-                       aes(y=value),
-                       shape=4, size=4, stroke=2, show.legend=F) +
-            labs(x="Age",
-                 y="Outcome value",
-                 shape="Conditional performance",
-                 pattern_fill="") +
-            theme_bw() +
-            theme(legend.position="bottom", legend.direction = "horizontal",
-                  legend.box="vertical")
-        }
+                       shape=4, size=4, stroke=2, show.legend=F) 
+        } 
         
       } else if(any(this.df2$no_percentile) %in% c(TRUE)){
         outplot <-  outplot +
@@ -818,8 +797,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                      shape=4, size=4, stroke=2, show.legend=F) +
           labs(x="Age",
                y="Outcome value",
-               shape="Conditional performance",
-               pattern_fill="") +
+               shape="Conditional performance") +
           theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
@@ -827,8 +805,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         outplot <- outplot +
           labs(x="Age",
                y="Outcome value",
-               shape="Conditional performance",
-               pattern_fill="") +
+               shape="Conditional performance") +
           theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
@@ -837,7 +814,9 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       
     } else{
       outplot  <- outplot +
-        new_scale("shape")+
+        ## using blank space for shape label due to bug in ggnewscale version 0.5.0
+        labs(shape=" ")+
+        new_scale("shape")+ 
         geom_point(data=limits, x=50, aes(y=my.ymin), alpha=0) +
         geom_point(data=limits, x=50, aes(y=my.ymax), alpha=0) +
         geom_line(aes(y=value, group=id),
@@ -848,8 +827,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
         labs(x="Age",
              y="Outcome value",
-             shape="Conditional performance",
-             pattern_fill="") +
+             shape="Conditional performance") +
         theme_bw() +
         theme(legend.position="bottom", legend.direction = "horizontal",
               legend.box="vertical")
@@ -900,6 +878,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           geom_vline(data=df.mh,
                      aes(xintercept=age),
                      linetype=3, linewidth=1, colour="purple") +
+          ## using blank space for shape label due to bug in ggnewscale version 0.5.0
+          labs(shape=" ")+
           new_scale("shape") +
           geom_point(data=df.mh.sum,
                      aes(x=age_xnudge, y=label_height,
@@ -922,6 +902,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       scale_linetype_manual(values=c("Current Age" = "dotted"), 
                             guide=guide_legend(order=99, override.aes = list(alpha=1)))+
       labs(linetype=NULL)
+    
   }
   if (!is.null(path)) { 
     plotname <- paste(paste("wisplot", sub, var.in, sep="_"), "png", sep=".")
