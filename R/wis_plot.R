@@ -405,7 +405,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
     ## Start plot creation
     outplot  <- ggplot(this.df, aes(x=age)) +
-      scale_x_continuous(limits=c(35,90))
+      scale_x_continuous(limits=c(35,90))+
+      theme_bw()
     
     if (int.miss==FALSE) {
       this.df <- merge(this.df,
@@ -416,7 +417,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     } else {
       this.df <- merge(this.df,
                        select(limits, variable, y.range, my.ymin, my.ymax, ncol)) %>%
-        mutate(annohts = 1.05 * my.ymin,
+        mutate(annohts = 1.25 * my.ymin,
                annonudge = 0.05*y.range,
                annosize = 5 - pmin(ncol, 2))
     }
@@ -426,15 +427,24 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
     if (vislabel==TRUE) {
       ## Adding facet_wrap and facetted_pos_scales here for differing scales to work. 
+      this.df$vislabel <- paste0("\nV", this.df$visno)
+      age_labs<- c(c(unique(this.df$vislabel)),  "40", "50", "60", "70", "80", "90")
+      
       outplot<- outplot +
-        geom_text_repel(data=this.df,
-                        aes(x=age, y=0,
-                            label=paste0("V", visno)),
-                        hjust=0.5, colour="blue",
-                        direction="x",
-                        force=1.5,
-                        segment.colour=NA,
-                        size=this.df$annosize[1])+
+        scale_x_continuous(limits=c(35,90), breaks=c(unique(this.df$age), 40, 50, 60, 70, 80, 90),
+                           labels=age_labs, minor_breaks = c(35, 45, 55, 65, 75, 85))+
+        theme(axis.text.x=element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6))),
+              axis.ticks.x = element_line(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6)),
+                                          linewidth=c(rep(1, length(unique(this.df$age))), rep(0.5, 6)))
+              )+
+        # geom_text_repel(data=this.df,
+        #                 aes(x=age, y=-20,
+        #                     label=paste0("V", visno)),
+        #                 hjust=0.5, colour="blue",
+        #                 direction="x",
+        #                 force=0,
+        #                 segment.colour=NA,
+        #                 size=this.df$annosize[1])+
         facet_wrap(~variable.f, 
                    ncol=pmin(limits$ncol[1],3),
                    scales="free_y")
@@ -506,19 +516,24 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
       
       breaks_list<- list(
         if("pacc3.cfl.xw.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-CFL")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-CFL")$my.ymax), 50), 
+                             limits=c(dplyr::filter(limits, variable.f=="PACC3-CFL")$testmin, NA))
         },
         if("pacc3.an.xw.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-AN")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-AN")$my.ymax), 50), 
+                             limits=c(dplyr::filter(limits, variable.f=="PACC3-AN")$testmin, NA))
         },
         if("pacc3.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC3-DS")$my.ymax), 50), 
+                             limits=c(dplyr::filter(limits, variable.f=="PACC3-DS")$testmin, NA))
         },
         if("pacc4.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC4-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC4-DS")$my.ymax), 50), 
+                             limits=c(dplyr::filter(limits, variable.f=="PACC4-DS")$testmin, NA))
         },
         if("pacc5.wrap.sca" %in% this.df$variable){
-          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC5-DS")$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(dplyr::filter(limits, variable.f=="PACC5-DS")$my.ymax), 50), 
+                             limits=c(dplyr::filter(limits, variable.f=="PACC5-DS")$testmin, NA))
         })
       
       breaks_list<- breaks_list[!sapply(breaks_list,is.null)]
@@ -553,7 +568,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     } else if (var.in %in% c("trlb.xw", "pacc3.cfl.xw.sca", "pacc3.an.xw.sca", "pacc3.wrap.sca", "pacc4.wrap.sca", "pacc5.wrap.sca")) {
       outplot<- outplot+
         ggh4x::facetted_pos_scales(y = list(
-          scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 50), limits=c(0, NA))
+          scale_y_continuous(breaks=seq(0,ceiling(limits$my.ymax), 50), limits=c(limits$testmin, NA))
         ))
       
     }
@@ -775,10 +790,10 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           geom_point(data=dplyr::filter(this.df, singleobs==TRUE),
                      aes(y=value),
                      shape=4, size=4, stroke=2, show.legend=F) +
-          labs(x="Age",
+          labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          theme_bw() +
+          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
         
@@ -795,18 +810,18 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           geom_point(data=dplyr::filter(this.df2, no_percentile==TRUE),
                      aes(y=value),
                      shape=4, size=4, stroke=2, show.legend=F) +
-          labs(x="Age",
+          labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          theme_bw() +
+          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
       } else {
         outplot <- outplot +
-          labs(x="Age",
+          labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          theme_bw() +
+          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
       }
@@ -825,10 +840,10 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         scale_shape_manual(limits=c("High","Low"), values=c(2,6),
                            na.translate=FALSE, guide = guide_legend(order = 99)) +
         scale_alpha_continuous(range=c(0,1), limits=c(0,1), guide="none") +
-        labs(x="Age",
+        labs(x=NULL,
              y="Outcome value",
              shape="Conditional performance") +
-        theme_bw() +
+        #theme_bw() +
         theme(legend.position="bottom", legend.direction = "horizontal",
               legend.box="vertical")
     }
@@ -896,12 +911,16 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     ## Plot formatting and add current age
     outplot<- outplot +
       theme(text=element_text(size=18),
+            axis.text.x = element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 7)),
+                                       size= c(rep(10, length(unique(this.df$age))),
+                                               rep(12, 7))),
+            axis.text.y = element_text(colour="black", size=12),
             legend.text=element_text(size=14))+
       new_scale("linetype")+
       geom_vline(aes(xintercept=this.df$cur_age, linetype="Current Age"), color = "darkgreen",alpha=0.8, linewidth=1)+
       scale_linetype_manual(values=c("Current Age" = "dotted"), 
-                            guide=guide_legend(order=99, override.aes = list(alpha=1)))+
-      labs(linetype=NULL)
+                            guide=guide_legend(order=1, override.aes = list(alpha=1)))+
+      labs(linetype=" ")
     
   }
   if (!is.null(path)) { 

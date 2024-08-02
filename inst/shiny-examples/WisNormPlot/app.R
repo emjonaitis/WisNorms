@@ -26,7 +26,7 @@ meanage  <- 58.9
 ui <- fluidPage(
 
   # App title ----
-  titlePanel("Visualizing Wisconsin Data (DEV)"),
+  titlePanel("Visualizing Wisconsin Data"),
 
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
