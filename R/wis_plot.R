@@ -428,18 +428,31 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     annonudge.vec <- na.omit(this.df$annonudge)
     names(annonudge.vec) <- unique(this.df$variable)
     
+    
+    
     if (vislabel==TRUE) {
+      this.df<- this.df %>% arrange(visno)
       ## Adding facet_wrap and facetted_pos_scales here for differing scales to work. 
-      this.df$vislabel <- paste0("\nV", this.df$visno)
-      age_labs<- c(c(unique(this.df$vislabel)),  "40", "50", "60", "70", "80", "90")
+      #this.df$vislabel <- paste0("\nV\n", this.df$visno)
+      this.df$vislabel <- paste0("V", this.df$visno)
+      age_labs<- c(unique(this.df$vislabel))
+      #age_labs<- c(c(unique(this.df$vislabel)),  "40", "50", "60", "70", "80", "90")
       
       outplot<- outplot +
-        scale_x_continuous(limits=c(35,90), breaks=c(unique(this.df$age), 40, 50, 60, 70, 80, 90),
-                           labels=age_labs, minor_breaks = c(35, 45, 55, 65, 75, 85))+
-        theme(axis.text.x=element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6))),
-              axis.ticks.x = element_line(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6)),
-                                          linewidth=c(rep(1, length(unique(this.df$age))), rep(0.5, 6)))
+        scale_x_continuous(limits=c(35,90),
+                           breaks=c(40, 50, 60, 70, 80, 90),
+                           sec.axis = dup_axis(name = NULL, labels = age_labs, breaks=unique(this.df$age),
+                                               guide = guide_axis(n.dodge=2)))+
+        theme(axis.title.x.top = element_text(size=10, colour="blue"),
+              axis.ticks.x.top = element_line(colour="blue"),
+              axis.ticks.length.x.top = unit(c( rep(c(0.075, 0.2), length=length(unique(this.df$age)))), "inch")
               )+
+        #scale_x_continuous(limits=c(35,90), breaks=c(unique(this.df$age), 40, 50, 60, 70, 80, 90),
+        #                   labels=age_labs, minor_breaks = c(35, 45, 55, 65, 75, 85))+
+        #theme(axis.text.x=element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6))),
+        #      axis.ticks.x = element_line(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6)),
+        #                                  linewidth=c(rep(1, length(unique(this.df$age))), rep(0.5, 6)))
+        #      )+
         # geom_text_repel(data=this.df,
         #                 aes(x=age, y=-20,
         #                     label=paste0("V", visno)),
@@ -680,7 +693,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                  name="Biomarker")+
           scale_shape_manual(values = shapes, 
                              breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                             guide=guide_legend(order=3))
+                             guide=guide_legend(order=3))+
+          guides(colour=guide_colorbar(order=2))
         
       } else {
         limits<-  df.pib %>% arrange(age) %>%
@@ -706,7 +720,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                    name="Biomarker")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                               guide=guide_legend(order=3))
+                               guide=guide_legend(order=3))+
+            guides(colour=guide_colorbar(order=2))
           
           
         } else if (limits$my.pibrange[1] > 1) {
@@ -744,7 +759,8 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
             labs(pattern_fill=" ")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                               guide=guide_legend(order=3))
+                               guide=guide_legend(order=3))+
+            guides(colour=guide_colorbar(order=2))
           
         }else {
           outplot <- outplot +
@@ -761,8 +777,69 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                    name="Biomarker")+
             scale_shape_manual(values = shapes, 
                                breaks=c("aSyn", "MK6240", "pTau217", "pTau/AB42", "PiB/NAV"),
-                               guide=guide_legend(order=3))
+                               guide=guide_legend(order=3))+
+            guides(colour=guide_colorbar(order=2))
         }
+      }
+    }
+    
+    if (mh==TRUE) {
+      df.mh      <- dplyr::filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
+      if (nrow(df.mh)==0) {
+        mh <- FALSE
+      } else {
+        # Plot only events in the age range
+        df.mh.sum  <- arrange(df.mh, age) %>%
+          mutate(event = ifelse(is.na(event), "Unknown event", event),
+                 event.f = factor(event,
+                                  levels=unique(event[order(age)])),
+                 age_lag = lag(age),
+                 new_group = ifelse(is.na(age_lag) | (age - age_lag) > 2,
+                                    TRUE, FALSE))
+        
+        df.mh.sum<- df.mh.sum %>%
+          do({group_starts = which(.$new_group==TRUE)
+          group_reps = ifelse(!is.na(lead(group_starts)),
+                              lead(group_starts) - group_starts,
+                              length(.$new_group) - group_starts + 1)
+          groups = as.vector(unlist(mapply(rep,
+                                           x=LETTERS[c(1:length(group_starts))],
+                                           times=group_reps)))
+          
+          df.out <- data.frame(., groups)
+          colnames(df.out)[length(df.out)] <- "groups"
+          df.out }) %>%
+          arrange(age) %>%
+          group_by(groups) %>%
+          summarize(age = first(age),
+                    event.paste = paste(event, collapse=";\n"),
+                    event.paste.f = factor(event.paste,
+                                           levels=event.paste[order(groups)])) %>%
+          ungroup() %>%
+          merge(select(limits, variable.f, my.ymin, my.ymax, ncol)) %>%
+          mutate(label_height = my.ymin + 0.95*(my.ymax-my.ymin),
+                 label_size = 6 - pmin(ncol, 4),
+                 label_xnudge = -1*pmin(ncol, 2),
+                 age_xnudge = age + label_xnudge)
+        letterlabels <- as.numeric(sapply(unique(df.mh.sum$groups), utf8ToInt))
+        letterlabels2<- unique(df.mh.sum$groups)
+        
+        outplot <- outplot + 
+          geom_vline(data=df.mh,
+                     aes(xintercept=age),
+                     linetype=3, linewidth=1, colour="purple") +
+          ## using blank space for shape label due to bug in ggnewscale version 0.5.0
+          labs(shape=" ")+
+          new_scale("shape") +
+          geom_point(data=df.mh.sum,
+                     aes(x=age_xnudge, y=label_height,
+                         shape=event.paste.f),
+                     size=5,colour="purple", stroke=3) +
+          guides(size="none")+
+          scale_shape_manual(breaks=levels(df.mh.sum$event.paste.f),
+                             values=letterlabels2,
+                             name="Medical events", guide = guide_legend(order = 98, override.aes = list(size = 5)))+
+          theme(legend.direction="horizontal")
       }
     }
     
@@ -865,80 +942,22 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
               legend.box="vertical")
     }
     
-    if (mh==TRUE) {
-      df.mh      <- dplyr::filter(df.mh, age > my.xlim[1] & age < my.xlim[2])
-      if (nrow(df.mh)==0) {
-        mh <- FALSE
-      } else {
-        # Plot only events in the age range
-        df.mh.sum  <- arrange(df.mh, age) %>%
-          mutate(event = ifelse(is.na(event), "Unknown event", event),
-                 event.f = factor(event,
-                                  levels=unique(event[order(age)])),
-                 age_lag = lag(age),
-                 new_group = ifelse(is.na(age_lag) | (age - age_lag) > 2,
-                                    TRUE, FALSE))
-        
-        df.mh.sum<- df.mh.sum %>%
-          do({group_starts = which(.$new_group==TRUE)
-          group_reps = ifelse(!is.na(lead(group_starts)),
-                              lead(group_starts) - group_starts,
-                              length(.$new_group) - group_starts + 1)
-          groups = as.vector(unlist(mapply(rep,
-                                           x=LETTERS[c(1:length(group_starts))],
-                                           times=group_reps)))
-          
-          df.out <- data.frame(., groups)
-          colnames(df.out)[length(df.out)] <- "groups"
-          df.out }) %>%
-          arrange(age) %>%
-          group_by(groups) %>%
-          summarize(age = first(age),
-                    event.paste = paste(event, collapse=";\n"),
-                    event.paste.f = factor(event.paste,
-                                           levels=event.paste[order(groups)])) %>%
-          ungroup() %>%
-          merge(select(limits, variable.f, my.ymin, my.ymax, ncol)) %>%
-          mutate(label_height = my.ymin + 0.95*(my.ymax-my.ymin),
-                 label_size = 6 - pmin(ncol, 4),
-                 label_xnudge = -1*pmin(ncol, 2),
-                 age_xnudge = age + label_xnudge)
-        letterlabels <- as.numeric(sapply(unique(df.mh.sum$groups), utf8ToInt))
-        letterlabels2<- unique(df.mh.sum$groups)
-        
-        outplot <- outplot + 
-          geom_vline(data=df.mh,
-                     aes(xintercept=age),
-                     linetype=3, linewidth=1, colour="purple") +
-          ## using blank space for shape label due to bug in ggnewscale version 0.5.0
-          labs(shape=" ")+
-          new_scale("shape") +
-          geom_point(data=df.mh.sum,
-                     aes(x=age_xnudge, y=label_height,
-                         shape=event.paste.f),
-                     size=5,colour="purple", stroke=3) +
-          guides(size="none")+
-          scale_shape_manual(breaks=levels(df.mh.sum$event.paste.f),
-                             values=letterlabels2,
-                             name="Medical events", guide = guide_legend(order = 99, override.aes = list(size = 5)))+
-          theme(legend.direction="horizontal")
-      }
-    }
     
     ## Plot formatting and add current age
     if(vislabel==TRUE){
       outplot<- outplot +
       theme(text=element_text(size=18),
-            axis.text.x = element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 7)),
-                                       size= c(rep(10, length(unique(this.df$age))),
-                                               rep(12, 7))),
-            axis.text.y = element_text(colour="black", size=12),
+            axis.text.y = element_text(colour="black", size=14),
+            axis.text.x.bottom = element_text(colour="black", size=14),
+            axis.text.x.top = element_text(colour="blue", size=10),
+            #axis.text.x = element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 7)),
+            #                           size= c(rep(10, length(unique(this.df$age))), rep(14, 7))),
+            #axis.text.y = element_text(colour="black", size=14),
             legend.text=element_text(size=14))
     } else{
       outplot<- outplot +
         theme(text=element_text(size=18),
-              axis.text.x = element_text(colour="black", size= 12),
-              axis.text.y = element_text(colour="black", size=12),
+              axis.text = element_text(colour="black", size= 14),
               legend.text=element_text(size=14))
     }
     
