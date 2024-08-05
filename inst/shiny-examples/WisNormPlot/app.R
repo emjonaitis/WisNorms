@@ -207,7 +207,8 @@ server <- function(input, output, session) {
   biomarkerInput<- reactive({
     if(input$ownData==TRUE){
       req(input$file2)
-      read.csv(input$file2$datapath, stringsAsFactors=FALSE)}
+      read.csv(input$file2$datapath, stringsAsFactors=FALSE)
+      }
     })
 
   mhInput <- reactive({

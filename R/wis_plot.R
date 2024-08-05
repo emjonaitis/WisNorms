@@ -180,8 +180,11 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           mutate(amp_bin = case_when(Result %in% c("Detected-1") ~ 2,
                                      Result %in% c("Not Detected") ~ 1,
                                      Result %in% c("QNS", "Indeterminate", "Detected-2") ~ NA)) %>%
-          amp <- TRUE
           rename(age_amp=age)
+        
+        n.amp <- nrow(df.amp)
+        message(paste("aSyn:", n.amp, "observations"))
+        amp <- ifelse(n.amp>0, TRUE, FALSE)
       }
     } else { 
       amp <- FALSE 
@@ -196,7 +199,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     if(is.data.frame(mh_list)) {
       mh_list = list(mh=mh_list)
     }
-    
         
     if (is.null(mh_list$mh)) {
       mh <- FALSE
