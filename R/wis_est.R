@@ -28,7 +28,6 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
   innames <- c(id, source, age, visno, gender, ed)
   names(innames) <- c("id.tmp","source.tmp","age.tmp","visno.tmp","gender.tmp","ed.tmp")
   redata         <- rename(data, !!!innames)
-  message(paste("At the start, I see", nrow(redata), "rows in redata"))
   if (!is.numeric(redata$ed.tmp)) {
     stop("Variable ed must be numeric.")
   } else {
@@ -51,9 +50,12 @@ wis_est <- function(data, variable.list=NULL, model.unc=NULL, model.c=NULL,
   }
   if (raw==TRUE) {
     if (is.null(raw.names)) {
-      raw.names <- colnames(redata)[colnames(redata) %in% unique(target$variable) |
-                                      colnames(redata) %in% unique(missval$variable)]
-    }
+      target_columns <- which(colnames(redata) %in% unique(target$variable) |
+                                colnames(redata) %in% unique(missval$variable))
+      colnames(redata)[target_columns] <- tolower(colnames(redata)[target_columns])
+      raw.names <- colnames(redata)[target_columns]
+      message(paste("Identified cognitive variables:", paste(raw.names, collapse=", ")))
+    } 
     harmdata <- wis_harm(redata, raw.names=raw.names, id="id.tmp", source="source.tmp", visno="visno.tmp")
     harm.names <- colnames(harmdata)
     pacc3.trlb.use   <- as.logical(min(c("trlb.xw","lm_del.xw","ttotal") %in% harm.names))
