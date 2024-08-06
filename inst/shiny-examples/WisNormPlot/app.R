@@ -238,8 +238,6 @@ server <- function(input, output, session) {
       biomarkers<- FALSE
     }
     
-    message(paste("mh:",mh,"biomarkers:",biomarkers))
-    
     ownData<- ownData()
     data <- dataInput()
     var.in <- input$variable
@@ -264,8 +262,6 @@ server <- function(input, output, session) {
       biomarker_list$mk <- biomarkerInput() %>% filter(biomarker=="MK6240")
       biomarker_list$amp <- biomarkerInput() %>% filter(biomarker=="aSyn")
     }
-    
-    message(paste("Got through the inputs. My biomarker list:", paste(names(biomarker_list), collapse=", ")))
     
       if (length(biomarker_list)>0) {
         if(length(mh_list)>0) {
