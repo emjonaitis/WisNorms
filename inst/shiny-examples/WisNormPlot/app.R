@@ -10,6 +10,7 @@ library(tidyr)
 library(readr)
 library(stringr)
 library(patchwork)
+library(WisNorms)
 
 # modified for testing
 unccoefs <- readRDS("./data/unccoefs.rds")
