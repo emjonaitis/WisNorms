@@ -367,7 +367,7 @@ server <- function(input, output, session) {
       
       df.ptau<- df.ptau %>%
                 filter(id==inid) %>%
-                mutate(mean_conc = round(as.numeric(mean_conc), 3)) %>%
+                mutate(mean_conc = sprintf("%.3f", round(as.numeric(mean_conc), 3))) %>%
                 select(id, age_ptau=age, mean_conc, ptau_bin)
       
       df.mk <- df.mk %>%
