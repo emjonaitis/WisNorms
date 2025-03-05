@@ -24,6 +24,7 @@
 #' @importFrom ggrepel geom_text_repel
 #' @importFrom ggnewscale new_scale
 #' @importFrom ggpattern geom_rect_pattern scale_pattern_fill_manual
+#' @importFrom ggh4x facetted_pos_scales
 #' @seealso \code{\link{wis_est}}
 #' @export
 
@@ -214,14 +215,14 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
 
   # Restrict to desired variables
   # On full set, set testmin
-  this.df <- dplyr::filter(df,
-                    variable %in% var) %>%
+  this.df <- df %>% 
     group_by(id) %>% arrange(visno, .by_group=T) %>%
-    mutate(cur_age = dplyr::last(age, na_rm=T)) %>% ungroup()
+    mutate(cur_age = dplyr::last(age, na_rm=T)) %>% ungroup() %>%
+    dplyr::filter(variable %in% var) 
   
   limits  <- this.df %>%
     ## filter to get testmin per participant
-    filter(id==sub) %>%
+    filter(id==inid) %>%
     group_by(variable, variable.f) %>%
     summarize(testmin = pmin(min(value, na.rm=TRUE), 0),
               testmax = first(testmax.vec[variable]),
@@ -276,9 +277,7 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                 ed.ba.f=first(ed.ba.f),
                 base.readcat.f=first(base.readcat.f),
                 base.readcat.lab = recode(base.readcat.f, `0`="Q1",`1`="Q2",`2`="Q3",`3`="Q4"))
-    # Note 2023-09-25: Need to modify this to create some kind of intercept default
-    #   for use when we are missing demographics. We want to still be able to plot raw scores even when
-    #   we cannot plot lines.
+
     int.levels<-data.frame(Intercept=1,
                            age.L=-1*meanage,
                            gender.f0=as.numeric(demos$gender.f=="Male"),
@@ -433,39 +432,21 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
     
     
     if (vislabel==TRUE) {
-      this.df<- this.df %>% arrange(visno)
-      ## Adding facet_wrap and facetted_pos_scales here for differing scales to work. 
-      #this.df$vislabel <- paste0("\nV\n", this.df$visno)
-      this.df$vislabel <- paste0("V", this.df$visno)
-      age_labs<- c(unique(this.df$vislabel))
-      #age_labs<- c(c(unique(this.df$vislabel)),  "40", "50", "60", "70", "80", "90")
+      this.df.visno<- df %>% filter(id==inid) %>% arrange(visno) %>% mutate(age=age.L+meanage, vislabel = paste0("V", visno))
+      vis_labs<- c(unique(this.df.visno$vislabel))
       
       outplot<- outplot +
-        scale_x_continuous(limits=c(35,90),
-                           breaks=c(40, 50, 60, 70, 80, 90),
-                           sec.axis = dup_axis(name = NULL, labels = age_labs, breaks=unique(this.df$age),
-                                               guide = guide_axis(n.dodge=2)))+
-        theme(axis.title.x.top = element_text(size=10, colour="blue"),
-              axis.ticks.x.top = element_line(colour="blue"),
-              axis.ticks.length.x.top = unit(c( rep(c(0.075, 0.2), length=length(unique(this.df$age)))), "inch")
-              )+
-        #scale_x_continuous(limits=c(35,90), breaks=c(unique(this.df$age), 40, 50, 60, 70, 80, 90),
-        #                   labels=age_labs, minor_breaks = c(35, 45, 55, 65, 75, 85))+
-        #theme(axis.text.x=element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6))),
-        #      axis.ticks.x = element_line(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 6)),
-        #                                  linewidth=c(rep(1, length(unique(this.df$age))), rep(0.5, 6)))
-        #      )+
-        # geom_text_repel(data=this.df,
-        #                 aes(x=age, y=-20,
-        #                     label=paste0("V", visno)),
-        #                 hjust=0.5, colour="blue",
-        #                 direction="x",
-        #                 force=0,
-        #                 segment.colour=NA,
-        #                 size=this.df$annosize[1])+
-        facet_wrap(~variable.f, 
-                   ncol=pmin(limits$ncol[1],3),
-                   scales="free_y")
+                scale_x_continuous(limits=c(35,90),
+                                   breaks=c(40, 50, 60, 70, 80, 90),
+                                   sec.axis = dup_axis(name = NULL, labels = vis_labs, breaks=unique(this.df.visno$age),
+                                                       guide = guide_axis(n.dodge=2)))+
+                theme(axis.title.x.top = element_text(size=10, colour="blue"),
+                      axis.ticks.x.top = element_line(colour="blue"),
+                      axis.ticks.length.x.top = unit(c( rep(c(0.075, 0.2), length=length(unique(this.df.visno$age)))), "inch")
+                )+
+                facet_wrap(~variable.f, 
+                           ncol=pmin(limits$ncol[1],3),
+                           scales="free_y")
     } else{
       outplot<- outplot +
         facet_wrap(~variable.f, 
@@ -746,7 +727,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
                                   pattern_fill="Amyloid EAOA"),
                               pattern="circle",
                               fill=NA,
-                              #colour="white",
                               pattern_colour="red",
                               pattern_density=0.1,
                               pattern_spacing=0.02,
@@ -889,7 +869,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
         
@@ -909,7 +888,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
       } else {
@@ -917,7 +895,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
           labs(x=NULL,
                y="Outcome value",
                shape="Conditional performance") +
-          #theme_bw() +
           theme(legend.position="bottom", legend.direction = "horizontal",
                 legend.box="vertical")
       }
@@ -939,7 +916,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
         labs(x=NULL,
              y="Outcome value",
              shape="Conditional performance") +
-        #theme_bw() +
         theme(legend.position="bottom", legend.direction = "horizontal",
               legend.box="vertical")
     }
@@ -952,9 +928,6 @@ wis_plot <- function(data, var, sub, vislabel=TRUE, biomarker_list=NULL, mh_list
             axis.text.y = element_text(colour="black", size=14),
             axis.text.x.bottom = element_text(colour="black", size=14),
             axis.text.x.top = element_text(colour="blue", size=10),
-            #axis.text.x = element_text(colour=c(rep("blue", length(unique(this.df$age))), rep("black", 7)),
-            #                           size= c(rep(10, length(unique(this.df$age))), rep(14, 7))),
-            #axis.text.y = element_text(colour="black", size=14),
             legend.text=element_text(size=14))
     } else{
       outplot<- outplot +
